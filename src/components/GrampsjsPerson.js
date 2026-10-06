@@ -91,6 +91,17 @@ export class GrampsjsPerson extends GrampsjsObject {
           gender="${this.data.gender}"
         ></grampsjs-edit-gender>
         ${this._displayName()}
+        ${this.edit && this.appState.permissions?.canEdit && !this.preview
+          ? html`
+              <md-outlined-button
+                hidden
+                style="display: none"
+                @click=${() => fireEvent(this, 'person:edit-card')}
+              >
+                ${this._('Edit card')}
+              </md-outlined-button>
+            `
+          : ''}
       </h2>
       ${this._renderBirth()} ${this._renderDeath()} ${this._renderRelation()}
       ${this.preview ? '' : this._renderButtons()}

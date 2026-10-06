@@ -207,7 +207,7 @@
     "Confirm Password": "Подтвердите пароль",
     "Passwords do not match.": "Пароли не совпадают.",
     "Invalid E-mail address": "Неверный адрес электронной почты",
-    "Log in to Gramps Web": "Войти в Gramps Web",
+    "Log in to Gramps Web": "Войти на семейный сайт",
     "Register to Gramps Web": "Зарегистрироваться в Gramps Web",
     "full-text": "полнотекстовый",
     "semantic": "семантический",
@@ -448,5 +448,12 @@
     "Left out of the export": "Исключены из экспорта",
     "The import has completed.": "Импорт завершен.",
     "Problems found during the import": "При импорте обнаружены проблемы",
-    "Problems found in this file": "В этом файле обнаружены проблемы"
+    "Problems found in this file": "В этом файле обнаружены проблемы",
+    "Edit card": "Редактировать карточку",
+    "Loading person...": "Загрузка карточки…",
+    "Reload person": "Загрузить заново",
+    "Unable to load person": "Не удалось загрузить карточку",
+    "Unable to save person": "Не удалось сохранить карточку",
+    "This person has changed. Reload the card before saving.": "Карточка была изменена. Загрузите её заново перед сохранением.",
+    "Edit dates, places, relatives and additional names in the page sections.": "Даты, места, родственников и дополнительные имена можно изменить в соответствующих разделах страницы."
 }
