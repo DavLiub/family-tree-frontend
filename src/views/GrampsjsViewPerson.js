@@ -3,6 +3,7 @@ import {html} from 'lit'
 import {GrampsjsViewObject} from './GrampsjsViewObject.js'
 import {fireEvent} from '../util.js'
 import '../components/GrampsjsPerson.js'
+import '../components/GrampsjsFormEditPerson.js'
 
 export class GrampsjsViewPerson extends GrampsjsViewObject {
   static get properties() {
@@ -73,6 +74,40 @@ export class GrampsjsViewPerson extends GrampsjsViewObject {
     }&profile=all&backlinks=true&extend=all&precision=1`
   }
 
+  _openPersonForm() {
+    if (!this.active || !this.edit || !this.canEdit || !this._data.handle)
+      return
+    this.editDialogContent = html`
+      <grampsjs-form-edit-person
+        .appState=${this.appState}
+        .personHandle=${this._data.handle}
+        @object:cancel=${this._closePersonForm}
+        @object:save=${this._handlePersonSaved}
+      ></grampsjs-form-edit-person>
+    `
+  }
+
+  _closePersonForm() {
+    this.editDialogContent = ''
+  }
+
+  _handlePersonSaved() {
+    this._closePersonForm()
+    this._updateData(false)
+  }
+
+  _disableEditMode() {
+    this._closePersonForm()
+    super._disableEditMode()
+  }
+
+  update(changed) {
+    if (changed.has('grampsId') || (changed.has('active') && !this.active)) {
+      this._closePersonForm()
+    }
+    super.update(changed)
+  }
+
   renderElement() {
     return html`
       <grampsjs-person
@@ -82,6 +117,7 @@ export class GrampsjsViewPerson extends GrampsjsViewObject {
         .timelineData=${this._timelineData}
         ?edit="${this.edit}"
         ?canEdit="${this.canEdit}"
+        @person:edit-card=${this._openPersonForm}
       ></grampsjs-person>
     `
   }

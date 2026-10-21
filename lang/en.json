@@ -447,5 +447,12 @@
   "Left out of the export": "Left out of the export",
   "The import has completed.": "The import has completed.",
   "Problems found during the import": "Problems found during the import",
-  "Problems found in this file": "Problems found in this file"
+  "Problems found in this file": "Problems found in this file",
+  "Edit card": "Edit card",
+  "Loading person...": "Loading person...",
+  "Reload person": "Reload person",
+  "Unable to load person": "Unable to load person",
+  "Unable to save person": "Unable to save person",
+  "This person has changed. Reload the card before saving.": "This person has changed. Reload the card before saving.",
+  "Edit dates, places, relatives and additional names in the page sections.": "Edit dates, places, relatives and additional names in the page sections."
 }
