@@ -51,6 +51,8 @@ export const test = base.extend({
     const unexpected = []
     const errors = []
     const accessToken = token()
+    let record = structuredClone(person)
+    let nameSave
     let signedIn = false
     const recordError = owner => error =>
       errors.push({
@@ -122,10 +124,60 @@ export const test = base.extend({
             .postDataJSON()
             .strings.map(original => ({original, translation: original}))
         )
+      } else if (
+        signedIn &&
+        nameSave &&
+        method === 'PUT' &&
+        url.pathname === '/api/people/synthetic-person' &&
+        url.search === ''
+      ) {
+        const payload = request.postDataJSON()
+        nameSave.payloads.push(payload)
+        expect(payload.alternate_names).toEqual(person.alternate_names)
+        expect(payload.primary_name.surname_list).toEqual(
+          person.primary_name.surname_list
+        )
+        for (const key of ['date', 'citation_list', 'note_list'])
+          expect(payload.primary_name[key]).toEqual(person.primary_name[key])
+        for (const [key, value] of Object.entries(person)) {
+          if (
+            !['primary_name', 'profile', 'extended', 'backlinks'].includes(key)
+          )
+            expect(payload[key]).toEqual(value)
+        }
+        if (nameSave.payloads.length === 1) {
+          await new Promise(resolve => {
+            nameSave.release = resolve
+          })
+          return reply({message: 'Synthetic name save failed'}, 500)
+        }
+        expect(nameSave.payloads).toHaveLength(2)
+        record = {
+          ...record,
+          ...payload,
+          profile: {
+            ...record.profile,
+            name_given: payload.primary_name.first_name,
+          },
+        }
+        return reply([{old: person, new: record}])
       } else if (signedIn && method === 'GET') {
         if (url.pathname === '/api/trees/-/config') return reply({})
         if (url.pathname === '/api/tasks/') return reply([])
-        if (url.pathname === '/api/people/') return reply([person])
+        if (url.pathname === '/api/people/') return reply([record])
+        if (
+          nameSave &&
+          url.pathname === '/api/types/' &&
+          (url.search === '' || url.search === '?locale=1')
+        ) {
+          return reply({
+            default: {
+              name_types: ['Birth Name', 'Also Known As'],
+              name_origin_types: [],
+            },
+            custom: {},
+          })
+        }
         // The People list initializes its tag filter after breadcrumb navigation.
         if (
           new URL(page.url()).pathname === '/people' &&
@@ -169,6 +221,10 @@ export const test = base.extend({
       return route.abort('blockedbyclient')
     })
     const site = {
+      nameSave() {
+        nameSave = {payloads: [], release: null}
+        return nameSave
+      },
       async open(path, auth = true) {
         signedIn = auth
         await context.addInitScript(
@@ -185,7 +241,11 @@ export const test = base.extend({
         await page.goto(path)
       },
     }
-    await use(site)
+    try {
+      await use(site)
+    } finally {
+      nameSave?.release?.()
+    }
     expect(
       unexpected,
       'Every network request must be explicitly local or mocked'

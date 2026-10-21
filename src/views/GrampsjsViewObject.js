@@ -627,9 +627,11 @@ export class GrampsjsViewObject extends GrampsjsView {
         this._data,
         this._className,
         'alternate_names'
-      )
+      ).then(result => e.detail.complete?.(result))
     } else if (e.detail.action === 'updateName') {
-      this.updateName(e.detail.data, this._data)
+      this.updateName(e.detail.data, this._data).then(result =>
+        e.detail.complete?.(result)
+      )
     } else if (e.detail.action === 'addPlaceName') {
       this.addObject(e.detail.data, this._data, this._className, 'alt_names')
     } else if (e.detail.action === 'updatePlaceName') {
@@ -998,19 +1000,38 @@ export class GrampsjsViewObject extends GrampsjsView {
     return this.appState.apiPost(url, obj)
   }
 
-  _updateObject(obj, objType, updateFunc, editorDraftPrefix) {
+  async _updateObject(obj, objType, updateFunc, editorDraftPrefix) {
     // remove extended, profile, backlinks, formatted keys from object
     // eslint-disable-next-line prefer-const
     let {extended, profile, backlinks, formatted, ...objNew} = obj
     objNew = {_class: capitalize(objType), ...objNew}
     const url = `/api/${objectTypeToEndpoint[objType]}/${obj.handle}`
 
-    this.appState.apiPut(url, updateFunc(objNew)).then(() => {
-      this._updateData(false)
-      // Clear editor drafts after successful save (if prefix provided)
+    let result
+    try {
+      result = await this.appState.apiPut(url, updateFunc(objNew))
+    } catch (error) {
+      result = {error: error?.message || 'An error occurred'}
+    }
+    if (
+      !result ||
+      typeof result !== 'object' ||
+      !('data' in result || 'task' in result) ||
+      'error' in result
+    ) {
+      const failure = {...result, error: result?.error || 'An error occurred'}
+      fireEvent(this, 'grampsjs:error', {message: failure.error})
+      return failure
+    }
+    // A refresh failure must not turn a completed write into a retryable save.
+    try {
       if (editorDraftPrefix) {
         clearDraftsWithPrefix(editorDraftPrefix)
       }
-    })
+      this._updateData(false)
+    } catch (error) {
+      fireEvent(this, 'grampsjs:error', {message: error.message})
+    }
+    return result
   }
 }
