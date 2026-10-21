@@ -126,6 +126,14 @@ export const test = base.extend({
         if (url.pathname === '/api/trees/-/config') return reply({})
         if (url.pathname === '/api/tasks/') return reply([])
         if (url.pathname === '/api/people/') return reply([person])
+        // The People list initializes its tag filter after breadcrumb navigation.
+        if (
+          new URL(page.url()).pathname === '/people' &&
+          url.pathname === '/api/tags/' &&
+          url.search === ''
+        ) {
+          return reply([])
+        }
         // The hidden home-person picker initializes the Changed tab (index 1).
         // md-tabs change → _setMode('changed') → _fetchData → _getFetchUrl('').
         const picker = {
