@@ -26,3 +26,8 @@
 
 # Local AI team documentation
 /AI doc/
+
+# Local test reports and diagnostic artifacts
+/artifacts/
+/playwright-report/
+/test-results/

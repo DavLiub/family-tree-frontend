@@ -2,6 +2,9 @@ import {defineConfig} from 'vitest/config'
 
 export default defineConfig({
   test: {
+    include: ['test/unit/**/*.test.js'],
+    allowOnly: false,
+    passWithNoTests: false,
     environment: 'happy-dom',
     coverage: {
       provider: 'v8',

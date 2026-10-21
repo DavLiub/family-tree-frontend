@@ -1,0 +1,12 @@
+{
+  "minLines": 10,
+  "minTokens": 100,
+  "mode": "mild",
+  "format": ["javascript", "typescript"],
+  "reporters": ["json"],
+  "absolute": false,
+  "gitignore": false,
+  "ignore": [],
+  "maxLines": 1000000,
+  "maxSize": "10mb"
+}

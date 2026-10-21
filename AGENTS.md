@@ -42,6 +42,9 @@
 - Автоматические тесты запускать через GitHub CI; локально на VPS не запускать тестовые наборы без просьбы пользователя.
 - Для функциональных изменений предусматривать прежде всего unit-тесты, затем необходимые интеграционные проверки.
 - Не добавлять screenshot-тесты без отдельной задачи.
+- Три группы проверок: unit + frontend integration (`test/unit`, `test/integration`); архитектурные стражи (`scripts/guards`, `test/guards`); браузерные DOM/layout проверки (`test/ui`). См. TESTING.md и GUARDS.md.
+- UI запускается на локальной сборке CI с вымышленными API-ответами; доступ к рабочему backend запрещён. Диагностические screenshots/traces при падении допустимы; пиксельные snapshots требуют отдельного решения.
+- Новые имена файлов в Git — максимум 48 символов с расширением. Production не импортирует тесты/инструменты/devDependencies, компоненты не импортируют страницы, чистые chart model/layout не зависят от UI/API/DOM. Старые нарушения учитываются точным baseline; новые нарушения и копии запрещены. Baseline и пороги не расширять ради зелёного CI.
 - Статические проверки файлов и Git diff допустимы; результат CI указывать отдельно от визуальной проверки.
 
 ---
@@ -231,7 +234,7 @@ npm test          # run once with coverage
 npm run test:watch
 ```
 
-Runner: [Vitest](https://vitest.dev/) with `happy-dom` (no browser needed), coverage via `@vitest/coverage-v8`. Tests live in `test/unit/` and cover pure functions. Import from `vitest` directly. Component tests requiring a real DOM are out of scope for now.
+Runner: [Vitest](https://vitest.dev/) with `happy-dom` (no browser needed), coverage via `@vitest/coverage-v8`. Unit tests live in `test/unit/`; frontend integration tests live in `test/integration/` and use a separate Vitest config. Import from `vitest` directly. Browser DOM/layout checks use Playwright in `test/ui/` against an isolated production build with fictional API fixtures. Architecture guards and their self-tests are separate. See TESTING.md and GUARDS.md for commands and limits.
 
 ## Opening issues and pull requests
 
