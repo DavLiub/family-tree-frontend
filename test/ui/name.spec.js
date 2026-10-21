@@ -24,11 +24,12 @@ test('name editor retains failed input, blocks duplicate save and retries', asyn
   await expect(submit).toBeEnabled()
   await submit.click()
   await expect.poll(() => save.payloads.length).toBe(1)
-  await expect(submit).toBeDisabled()
+  await expect(submit).toHaveAttribute('disabled', '')
   await expect(form.getByRole('status')).toContainText('Saving')
-  await expect(
-    form.getByRole('button', {name: 'Cancel', exact: true})
-  ).toBeDisabled()
+  await expect(form.locator('md-text-button').first()).toHaveAttribute(
+    'disabled',
+    ''
+  )
   // Deliberately bypass native disabled-click filtering to exercise the JS guard.
   await submit.dispatchEvent('click')
   await page.keyboard.press('Escape')
