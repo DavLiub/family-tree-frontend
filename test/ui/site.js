@@ -17,14 +17,51 @@ const metadata = {
 
 export const test = base.extend({
   site: async ({context, page}, use) => {
+    // Fail at the fixture boundary, before an incomplete API record reaches Lit.
+    expect(
+      person.backlinks,
+      'profile=all requires top-level backlinks'
+    ).toEqual({})
+    expect(person.extended.backlinks).toEqual({})
+    for (const key of [
+      'events',
+      'families',
+      'parent_families',
+      'media',
+      'citations',
+      'notes',
+      'tags',
+    ]) {
+      expect(person.extended[key], `extended.${key} must be an array`).toEqual(
+        expect.any(Array)
+      )
+    }
+    expect(person.profile).toMatchObject({
+      name_given: expect.any(String),
+      name_surname: expect.any(String),
+      birth: {},
+      death: {},
+      events: [],
+      families: [],
+    })
+    for (const name of [person.primary_name, ...person.alternate_names]) {
+      expect(name.type).toEqual(expect.any(String))
+      expect(name.surname_list).toEqual(expect.any(Array))
+    }
     const unexpected = []
     const errors = []
     const accessToken = token()
     let signedIn = false
-    page.on('pageerror', error => errors.push(error.message))
+    const recordError = owner => error =>
+      errors.push({
+        url: owner.url(),
+        message: error.message,
+        stack: error.stack || error.message,
+      })
+    page.on('pageerror', recordError(page))
     context.on('page', extra => {
       unexpected.push('Unexpected additional page')
-      extra.on('pageerror', error => errors.push(error.message))
+      extra.on('pageerror', recordError(extra))
     })
     await context.route('**/*', async route => {
       const request = route.request()
@@ -89,6 +126,29 @@ export const test = base.extend({
         if (url.pathname === '/api/trees/-/config') return reply({})
         if (url.pathname === '/api/tasks/') return reply([])
         if (url.pathname === '/api/people/') return reply([person])
+        // The hidden home-person picker initializes the Changed tab (index 1).
+        // md-tabs change → _setMode('changed') → _fetchData → _getFetchUrl('').
+        const picker = {
+          locale: 'en',
+          profile: 'all',
+          page: '1',
+          pagesize: '20',
+          sort: '-change',
+          query: '*',
+          type: 'person',
+        }
+        if (
+          new URL(page.url()).pathname === '/tree' &&
+          url.pathname === '/api/search/' &&
+          [...url.searchParams].length === Object.keys(picker).length &&
+          Object.entries(picker).every(
+            ([key, value]) => url.searchParams.get(key) === value
+          )
+        ) {
+          return reply([
+            {object_type: 'person', handle: person.handle, object: person},
+          ])
+        }
         if (url.pathname === '/api/people/synthetic-person/timeline')
           return reply([])
         if (
@@ -97,7 +157,7 @@ export const test = base.extend({
         )
           return reply([])
       }
-      unexpected.push(`${method} ${url.pathname}`)
+      unexpected.push(`${method} ${url.pathname}${url.search}`)
       return route.abort('blockedbyclient')
     })
     const site = {

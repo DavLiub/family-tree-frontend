@@ -29,6 +29,9 @@ export const person = {
   urls: [],
   tag_list: [],
   person_ref_list: [],
+  // profile=all&backlinks=true exposes both summaries and extended records.
+  // The object view inspects this top-level map even when References is hidden.
+  backlinks: {},
   profile: {
     name_given: 'Alexandria Synthetic',
     name_surname: 'Example',
@@ -38,6 +41,7 @@ export const person = {
     death: {},
     events: [],
     families: [],
+    references: {},
   },
   extended: {
     events: [],
@@ -46,6 +50,7 @@ export const person = {
     media: [],
     citations: [],
     notes: [],
+    tags: [],
     backlinks: {},
   },
 }

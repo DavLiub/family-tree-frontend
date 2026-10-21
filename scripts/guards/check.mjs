@@ -78,7 +78,7 @@ try {
   const cruise = bin('dependency-cruiser', 'depcruise')
   const jscpd = bin('jscpd', 'jscpd')
   function scan(cwd, label) {
-    // depcruise returns 1 for configured violations; JSON is still required.
+    // The JSON reporter exits 0 even for rule violations; CLI errors must fail.
     const graph = JSON.parse(
       run(
         process.execPath,
@@ -90,8 +90,7 @@ try {
           '--output-type',
           'json',
         ],
-        cwd,
-        [0, 1]
+        cwd
       )
     )
     const output = path.join(temp, label)

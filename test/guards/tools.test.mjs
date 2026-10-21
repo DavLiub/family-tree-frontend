@@ -10,12 +10,23 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 function fixture(files, inspect) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'guard-fixture-'))
   try {
+    fs.writeFileSync(
+      path.join(dir, 'package.json'),
+      JSON.stringify({name: 'guard-fixture', private: true, type: 'module'})
+    )
+    fs.writeFileSync(
+      path.join(dir, 'tsconfig.json'),
+      JSON.stringify({
+        compilerOptions: {allowJs: true, checkJs: false, noEmit: true},
+        include: ['src/**/*.js', 'src/**/*.ts'],
+        exclude: ['node_modules'],
+      })
+    )
     for (const [name, text] of Object.entries(files)) {
       const target = path.join(dir, name)
       fs.mkdirSync(path.dirname(target), {recursive: true})
       fs.writeFileSync(target, text)
     }
-    fs.writeFileSync(path.join(dir, 'tsconfig.json'), '{}')
     fs.symlinkSync(
       path.join(root, 'node_modules'),
       path.join(dir, 'node_modules'),
@@ -40,11 +51,59 @@ function cruise(dir) {
       '--output-type',
       'json',
     ],
-    {cwd: dir, encoding: 'utf8'}
+    {
+      cwd: dir,
+      encoding: 'utf8',
+      timeout: 30000,
+      maxBuffer: 8 * 1024 * 1024,
+    }
   )
-  assert.equal(result.error, undefined)
-  assert.ok([0, 1].includes(result.status), result.stderr)
-  return JSON.parse(result.stdout).summary.violations
+  const diagnostic = JSON.stringify(
+    {
+      cwd: dir,
+      status: result.status,
+      signal: result.signal,
+      error: result.error?.message,
+      stderr: result.stderr || '<empty>',
+      stdout: result.stdout?.slice(0, 4000) || '<empty>',
+    },
+    null,
+    2
+  )
+  assert.equal(
+    result.error,
+    undefined,
+    `dependency-cruiser spawn failed:\n${diagnostic}`
+  )
+  // Version 17.3.9's JSON reporter returns 0 even for rule violations.
+  // Status 1 is a CLI/config failure, not a negative fixture's success.
+  assert.equal(
+    result.status,
+    0,
+    `dependency-cruiser CLI failed:\n${diagnostic}`
+  )
+  assert.ok(
+    result.stdout?.trim(),
+    `dependency-cruiser returned empty JSON:\n${diagnostic}`
+  )
+  let report
+  try {
+    report = JSON.parse(result.stdout)
+  } catch (error) {
+    throw new Error(
+      `dependency-cruiser returned invalid JSON: ${error.message}\n${diagnostic}`,
+      {cause: error}
+    )
+  }
+  assert.ok(
+    Array.isArray(report.modules),
+    `dependency-cruiser report lacks modules:\n${diagnostic}`
+  )
+  assert.ok(
+    Array.isArray(report.summary?.violations),
+    `dependency-cruiser report lacks violations:\n${diagnostic}`
+  )
+  return report.summary.violations
 }
 
 test('actual parser detects production->test, component->page and a cycle', () => {
@@ -104,7 +163,7 @@ test('real jscpd identifies a substantial copied function', () => {
         '--output',
         output,
       ],
-      {cwd: dir, encoding: 'utf8'}
+      {cwd: dir, encoding: 'utf8', timeout: 30000, maxBuffer: 8 * 1024 * 1024}
     )
     assert.equal(result.status, 0, result.stderr)
     const report = JSON.parse(
@@ -113,4 +172,24 @@ test('real jscpd identifies a substantial copied function', () => {
     assert.ok(report.duplicates.length > 0)
     assert.ok(report.duplicates[0].fragment.length > 0)
   })
+})
+
+// Regression for the original fixture: JS-only inputs with allowJs disabled.
+test('CLI config failures expose diagnostics instead of a JSON parse error', () => {
+  fixture(
+    {'src/main.js': 'export const value = 1', 'tsconfig.json': '{}'},
+    dir => {
+      assert.throws(
+        () => cruise(dir),
+        error => {
+          assert.match(error.message, /dependency-cruiser CLI failed/)
+          assert.match(error.message, /"status": 1/)
+          assert.match(error.message, /No inputs were found/)
+          assert.match(error.message, /"stderr":/)
+          assert.match(error.message, /"stdout": "<empty>"/)
+          return true
+        }
+      )
+    }
+  )
 })
