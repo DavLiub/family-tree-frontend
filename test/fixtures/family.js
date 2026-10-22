@@ -7,9 +7,21 @@ export const person = {
   private: false,
   change: 1700000000,
   primary_name: {
+    _class: 'Name',
     first_name: 'Alexandria Synthetic',
     surname_list: [{surname: 'Example', primary: true}],
     type: 'Birth Name',
+    citation_list: ['synthetic-name-citation'],
+    note_list: ['synthetic-name-note'],
+    date: {
+      _class: 'Date',
+      calendar: 0,
+      modifier: 0,
+      quality: 0,
+      dateval: [1, 1, 1900, false],
+      sortval: 0,
+      text: '',
+    },
   },
   alternate_names: [
     {

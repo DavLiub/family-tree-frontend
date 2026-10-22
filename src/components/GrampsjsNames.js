@@ -18,6 +18,7 @@ export class GrampsjsNames extends GrampsjsEditableList {
       edit: {type: Boolean},
       dialogContent: {type: String},
       dialogTitle: {type: String},
+      _saveStatus: {state: true},
     }
   }
 
@@ -27,8 +28,15 @@ export class GrampsjsNames extends GrampsjsEditableList {
     this.edit = false
     this.dialogContent = ''
     this.dialogTitle = ''
+    this._saveStatus = ''
     this.hasEdit = true
     this.hasReorder = true
+  }
+
+  render() {
+    return html`${super.render()}<span role="status" aria-live="polite"
+        >${this._saveStatus}</span
+      >`
   }
 
   row(obj, i) {
@@ -54,11 +62,13 @@ export class GrampsjsNames extends GrampsjsEditableList {
   }
 
   _handleAdd() {
+    this._saveStatus = ''
     this.dialogContent = html`
       <grampsjs-form-edit-name
         id="name"
         @object:save="${this._handleNameAdd}"
         @object:cancel="${this._handleNameCancel}"
+        @object:saved="${this._handleNameSaved}"
         .appState="${this.appState}"
       >
       </grampsjs-form-edit-name>
@@ -103,24 +113,29 @@ export class GrampsjsNames extends GrampsjsEditableList {
   }
 
   _handleEdit() {
+    this._saveStatus = ''
     const handle = this._selectedIndex
     this.dialogContent = html`
       <grampsjs-form-edit-name
         id="name"
         @object:save="${e => this._handleNameSave(handle, e)}"
         @object:cancel="${this._handleNameCancel}"
+        @object:saved="${this._handleNameSaved}"
         .appState="${this.appState}"
-        .data="${this.data[handle]}"
+        .data="${structuredClone(this.data[handle])}"
       >
       </grampsjs-form-edit-name>
     `
   }
 
   _handleNameAdd(e) {
-    fireEvent(this, 'edit:action', {action: 'addName', data: e.detail.data})
+    fireEvent(this, 'edit:action', {
+      action: 'addName',
+      data: e.detail.data,
+      complete: e.detail.complete,
+    })
     e.preventDefault()
     e.stopPropagation()
-    this.dialogContent = ''
   }
 
   _handleNameDelete(handle, e) {
@@ -137,10 +152,16 @@ export class GrampsjsNames extends GrampsjsEditableList {
     fireEvent(this, 'edit:action', {
       action: 'updateName',
       data: {index: handle, name: e.detail.data},
+      complete: e.detail.complete,
     })
     e.preventDefault()
     e.stopPropagation()
+  }
+
+  _handleNameSaved(e) {
+    e.stopPropagation()
     this.dialogContent = ''
+    this._saveStatus = this._('Saved')
   }
 
   _handleNameCancel() {
