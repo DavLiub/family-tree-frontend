@@ -5,7 +5,7 @@ import '../components/GrampsjsSearchResultList.js'
 import '../components/GrampsjsPagination.js'
 import '../components/GrampsjsButtonToggle.js'
 
-import {objectTypeToEndpoint, objectIconPath, debounce} from '../util.js'
+import {objectTypeToEndpoint, objectIconPath} from '../util.js'
 import '@material/web/textfield/outlined-text-field'
 import '@material/web/iconbutton/icon-button.js'
 import {mdiMagnify} from '@mdi/js'
@@ -102,6 +102,11 @@ export class GrampsjsViewSearch extends GrampsjsView {
 
   constructor() {
     super()
+    this._interruptedSearch = undefined
+    this._searchKey = ''
+    this._requestVersion = 0
+    this._filterTimer = undefined
+    this._boundHandleNav = this._handleNav.bind(this)
     this.semantic = false
     this.dbInfo = {}
     this._data = []
@@ -125,6 +130,7 @@ export class GrampsjsViewSearch extends GrampsjsView {
           label="${this._('Search')}"
           type="search"
           @keydown="${this._handleSearchKey}"
+          @input="${this._handleSearchInput}"
         >
           <grampsjs-icon
             slot="leading-icon"
@@ -186,7 +192,7 @@ export class GrampsjsViewSearch extends GrampsjsView {
 
   async _handleModeClick(e) {
     this.semantic = e.detail.value
-    this._executeSearch()
+    return this._executeSearch()
   }
 
   renderFilters() {
@@ -215,12 +221,16 @@ export class GrampsjsViewSearch extends GrampsjsView {
   _handleFilterToggle(e) {
     const key = e.target.id.split('-', 2)[1]
     this._objectTypes = {...this._objectTypes, [key]: e.detail.checked}
+    this._invalidateRequest()
     this._page = 1
-    debounce(() => this._executeSearch(), 500)()
+    this._filterTimer = window.setTimeout(() => {
+      this._filterTimer = undefined
+      this._executeSearch()
+    }, 500)
   }
 
   _handlePageChanged(event) {
-    this._page = event.detail.page
+    return this._executeSearch(event.detail.page)
   }
 
   firstUpdated() {
@@ -249,17 +259,53 @@ export class GrampsjsViewSearch extends GrampsjsView {
   }
 
   _clearBox() {
-    this.shadowRoot.getElementById('search-field').value = ''
+    const field = this.shadowRoot?.getElementById('search-field')
+    if (field) field.value = ''
   }
 
   _clearAll() {
+    this._interruptedSearch = undefined
+    this._invalidateRequest()
     this._clearBox()
     this._data = []
     this._totalCount = -1
+    this._pages = -1
+    this._page = 1
+    this.error = false
+    this._errorMessage = ''
+    this._searchKey = ''
   }
 
   _clearPage() {
+    this._invalidateRequest()
     this._data = []
+  }
+
+  _invalidateRequest() {
+    this._requestVersion += 1
+    window.clearTimeout(this._filterTimer)
+    this._filterTimer = undefined
+    this.loading = false
+  }
+
+  _rememberInterruptedSearch() {
+    if (this.loading || this._filterTimer !== undefined) {
+      this._interruptedSearch = {
+        value: this.shadowRoot?.getElementById('search-field')?.value,
+        page: this._page,
+      }
+    }
+  }
+
+  shouldUpdate(changed) {
+    if (changed.has('active') && !this.active) this._rememberInterruptedSearch()
+    if (
+      (changed.has('active') && !this.active) ||
+      (changed.has('appState') &&
+        changed.get('appState')?.i18n?.lang !== this.appState.i18n.lang)
+    )
+      this._invalidateRequest()
+    return super.shouldUpdate(changed)
   }
 
   update(changed) {
@@ -267,10 +313,24 @@ export class GrampsjsViewSearch extends GrampsjsView {
     if (changed.has('active')) {
       this._focus()
     }
-    if (changed.has('_page') && this._totalCount > 0) {
-      this.loading = true
-      this._executeSearch(this._page)
+    const languageChanged =
+      changed.has('appState') &&
+      changed.get('appState')?.i18n?.lang &&
+      changed.get('appState').i18n.lang !== this.appState.i18n.lang
+    const value = this.shadowRoot?.getElementById('search-field')?.value
+    const interrupted = this._interruptedSearch
+    const resume =
+      changed.has('active') && interrupted && interrupted.value === value
+    if (changed.has('active')) this._interruptedSearch = undefined
+    if (value && (languageChanged || resume)) {
+      this._executeSearch(languageChanged ? 1 : interrupted.page)
     }
+  }
+
+  _handleSearchInput() {
+    this._interruptedSearch = undefined
+    this._invalidateRequest()
+    if (!this.shadowRoot.getElementById('search-field').value) this._clearAll()
   }
 
   _handleSearchKey(event) {
@@ -282,17 +342,27 @@ export class GrampsjsViewSearch extends GrampsjsView {
       if (query === '') {
         this._unfocus()
       } else {
-        this._clearBox()
+        this._clearAll()
       }
     }
   }
 
-  _executeSearch(page = 1) {
+  async _executeSearch(page = 1) {
+    this._interruptedSearch = undefined
+    this._invalidateRequest()
     let query = this.shadowRoot.getElementById('search-field').value
     if (query === '') {
       this._clearAll()
       return
     }
+    const searchKey = JSON.stringify([
+      query,
+      this.semantic,
+      this._objectTypes,
+      this.appState.i18n.lang || 'en',
+    ])
+    this._page = searchKey === this._searchKey ? page : 1
+    this._searchKey = searchKey
     // apply object type filter if necessary
     if (!Object.values(this._objectTypes).every(Boolean)) {
       if (window._oldSearchBackend) {
@@ -300,7 +370,7 @@ export class GrampsjsViewSearch extends GrampsjsView {
       }
     }
     this.loading = true
-    this._fetchData(query, page)
+    return this._fetchData(query, this._page)
   }
 
   _getSelectedObjectTypes() {
@@ -318,33 +388,59 @@ export class GrampsjsViewSearch extends GrampsjsView {
   }
 
   _pageFirst() {
-    this._page = 1
+    return this._executeSearch(1)
   }
 
   _pagePrev() {
-    this._page -= 1
+    return this._executeSearch(this._page - 1)
   }
 
   _pageNext() {
-    this._page += 1
+    return this._executeSearch(this._page + 1)
   }
 
   _pageLast() {
-    this._page = this._pages
+    return this._executeSearch(this._pages)
   }
 
   async _fetchData(query, page) {
-    let url = `/api/search/?query=${query}&locale=${
-      this.appState.i18n.lang || 'en'
-    }&profile=all&page=${page}&pagesize=20`
-    if (this._semanticEnabled()) {
-      url = `${url}&semantic=${this.semantic ? 1 : 0}`
-    }
+    this._invalidateRequest()
+    const version = this._requestVersion
+    const active = this.active
+    const semantic = this.semantic
+    const filters = this._objectTypes
+    const locale = this.appState.i18n.lang || 'en'
+    const fieldValue = this.shadowRoot?.getElementById('search-field')?.value
+    const params = new URLSearchParams({
+      query,
+      locale,
+      profile: 'all',
+      page: String(page),
+      pagesize: '20',
+    })
+    if (this._semanticEnabled())
+      params.set('semantic', this.semantic ? '1' : '0')
     if (!window._oldSearchBackend) {
-      const objectTypes = this._getSelectedObjectTypes()
-      url = `${url}&type=${objectTypes.join(',')}`
+      params.set('type', this._getSelectedObjectTypes().join(','))
     }
-    const data = await this.appState.apiGet(url)
+    this.loading = true
+    this.error = false
+    let data
+    try {
+      data = await this.appState.apiGet(`/api/search/?${params}`)
+    } catch (error) {
+      data = {error: error?.message || 'An error occurred'}
+    }
+    if (
+      version !== this._requestVersion ||
+      active !== this.active ||
+      semantic !== this.semantic ||
+      filters !== this._objectTypes ||
+      locale !== (this.appState.i18n.lang || 'en') ||
+      fieldValue !== this.shadowRoot?.getElementById('search-field')?.value
+    )
+      return
+    this._interruptedSearch = undefined
     this.loading = false
     if ('data' in data) {
       this.error = false
@@ -359,7 +455,16 @@ export class GrampsjsViewSearch extends GrampsjsView {
 
   connectedCallback() {
     super.connectedCallback()
-    window.addEventListener('nav', event => this._handleNav(event))
+    window.addEventListener('nav', this._boundHandleNav)
+    if (this.active && this._interruptedSearch)
+      this.requestUpdate('active', false)
+  }
+
+  disconnectedCallback() {
+    this._rememberInterruptedSearch()
+    this._invalidateRequest()
+    window.removeEventListener('nav', this._boundHandleNav)
+    super.disconnectedCallback()
   }
 
   _handleNav(event) {

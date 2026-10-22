@@ -132,6 +132,7 @@ export class GrampsjsViewObject extends GrampsjsView {
     this._data = {}
     this._className = ''
     this._saveButton = false
+    this._requestVersion = 0
     this._boundDisableEditMode = this._disableEditMode.bind(this)
     this._boundDeleteSelf = this._deleteSelf.bind(this)
     this._boundToggleEditMode = this._toggleEditMode.bind(this)
@@ -224,6 +225,7 @@ export class GrampsjsViewObject extends GrampsjsView {
   }
 
   disconnectedCallback() {
+    this._invalidateRequest()
     this.removeEventListener('edit:action', this._boundHandleEditAction)
     window.removeEventListener('edit-mode:off', this._boundDisableEditMode)
     window.removeEventListener('edit-mode:delete', this._boundDeleteSelf)
@@ -231,21 +233,23 @@ export class GrampsjsViewObject extends GrampsjsView {
     super.disconnectedCallback()
   }
 
+  shouldUpdate(changed) {
+    if (changed.has('grampsId') || (changed.has('active') && !this.active)) {
+      this._invalidateRequest()
+    }
+    return super.shouldUpdate(changed)
+  }
+
   update(changed) {
     super.update(changed)
-    if (this.active && changed.has('grampsId')) {
-      this._updateData()
-    }
-    if (
+    const identityChanged = changed.has('grampsId')
+    const needsActivation =
       changed.has('active') &&
-      this.active &&
       (Object.keys(this._data).length === 0 ||
-        this._data.gramps_id !== this.grampsId) &&
-      !this.loading
-    ) {
+        this._data.gramps_id !== this.grampsId)
+    if (this.active && (identityChanged || needsActivation)) {
       this._updateData()
-    }
-    if (
+    } else if (
       changed.has('appState') &&
       changed.get('appState')?.i18n?.lang !== this.appState.i18n.lang
     ) {
@@ -253,35 +257,51 @@ export class GrampsjsViewObject extends GrampsjsView {
     }
   }
 
-  _updateData(clearData = true) {
-    if (this._url === '') {
-      return
+  _invalidateRequest() {
+    this._requestVersion += 1
+    this.loading = false
+  }
+
+  async _updateData(clearData = true) {
+    this._invalidateRequest()
+    if (this._url === '' || !this.grampsId) return
+    if (clearData) this._clearData()
+    const version = this._requestVersion
+    const grampsId = this.grampsId
+    const url = this.getUrl()
+    const active = this.active
+    this.loading = true
+    this.error = false
+    let data
+    try {
+      data = await this.appState.apiGet(url)
+    } catch (error) {
+      data = {error: error?.message || 'An error occurred'}
     }
-    if (this.grampsId !== undefined && this.grampsId) {
-      if (clearData) {
-        this._clearData()
+    if (
+      version !== this._requestVersion ||
+      grampsId !== this.grampsId ||
+      url !== this.getUrl() ||
+      active !== this.active
+    )
+      return
+    this.loading = false
+    if ('data' in data) {
+      ;[this._data] = data.data
+      this.error = false
+      if (this._className !== '') {
+        this.dispatchEvent(
+          new CustomEvent('object:loaded', {
+            bubbles: true,
+            composed: true,
+            detail: {grampsId, className: this._className},
+          })
+        )
+        this._handleObjectLoaded(this._data)
       }
-      this.loading = true
-      this.appState.apiGet(this.getUrl()).then(data => {
-        this.loading = false
-        if ('data' in data) {
-          ;[this._data] = data.data
-          this.error = false
-          if (this._className !== '') {
-            this.dispatchEvent(
-              new CustomEvent('object:loaded', {
-                bubbles: true,
-                composed: true,
-                detail: {grampsId: this.grampsId, className: this._className},
-              })
-            )
-            this._handleObjectLoaded(this._data)
-          }
-        } else if ('error' in data) {
-          this.error = true
-          this._errorMessage = data.error
-        }
-      })
+    } else if ('error' in data) {
+      this.error = true
+      this._errorMessage = data.error
     }
   }
 
