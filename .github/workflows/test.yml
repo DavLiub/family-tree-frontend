@@ -2,6 +2,7 @@ name: CI
 
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
@@ -89,7 +90,7 @@ jobs:
           retention-days: 7
 
   ui:
-    name: UI layout
+    name: "${{ github.event_name == 'pull_request' && 'UI smoke (PR)' || 'UI regression (full)' }}"
     needs: checks
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -106,8 +107,15 @@ jobs:
         with:
           name: ui-build
           path: dist/
-      - run: npx --no-install playwright install --with-deps chromium
-      - run: npm run test:ui
+      - name: Install Chromium and system dependencies
+        timeout-minutes: 4
+        run: npx --no-install playwright install --with-deps chromium
+      - name: UI smoke before merge (desktop)
+        if: ${{ github.event_name == 'pull_request' }}
+        run: npm run test:ui:smoke
+      - name: Full UI regression (desktop and mobile)
+        if: ${{ github.event_name != 'pull_request' }}
+        run: npm run test:ui
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: ${{ !cancelled() }}
         with:
