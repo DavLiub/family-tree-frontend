@@ -45,7 +45,7 @@ jobs:
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
       - name: tag and push release image
         if: github.event_name == 'release'
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: Dockerfile
@@ -56,7 +56,7 @@ jobs:
         run: docker image prune -f -a
       - name: tag and push release nginx image
         if: github.event_name == 'release'
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: Dockerfile.nginx
