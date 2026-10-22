@@ -92,16 +92,6 @@ class GrampsjsFormEditName extends GrampsjsObjectForm {
     super._handleDialogCancel()
   }
 
-  _handleDialogKeydown(e) {
-    if (e.key === 'Escape' && this.saving) {
-      // Prevent the native dialog fallback from closing before its cancel event.
-      e.preventDefault()
-      e.stopPropagation()
-      return
-    }
-    super._handleDialogKeydown(e)
-  }
-
   _handleFormData(e) {
     super._handleFormData(e)
     this.checkFormValidity()

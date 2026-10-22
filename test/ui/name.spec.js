@@ -33,18 +33,21 @@ test('name editor retains failed input, blocks duplicate save and retries', asyn
   // Deliberately bypass native disabled-click filtering to exercise the JS guard.
   await submit.dispatchEvent('click')
   await page.keyboard.press('Escape')
-  await expect(form).toBeVisible()
+  const dialog = page.getByRole('dialog')
+  await expect(dialog).toBeVisible()
   expect(save.payloads).toHaveLength(1)
   await expect.poll(() => typeof save.release).toBe('function')
   save.release()
-  await expect(form.getByRole('alert')).toContainText(
+  await expect(dialog.getByRole('alert')).toContainText(
     'Synthetic name save failed'
   )
-  await expect(input).toHaveValue('Alexandria Revised')
+  await expect(dialog.getByRole('textbox', {name: 'Given name'})).toHaveValue(
+    'Alexandria Revised'
+  )
   await expect(submit).toBeEnabled()
   await submit.click()
   await expect.poll(() => save.payloads.length).toBe(2)
-  await expect(form).toHaveCount(0)
+  await expect(page.getByRole('dialog')).toHaveCount(0)
   await expect(names.getByRole('status')).toContainText('Saved')
   await expect(
     view.locator('h2').filter({hasText: 'Alexandria Revised'})

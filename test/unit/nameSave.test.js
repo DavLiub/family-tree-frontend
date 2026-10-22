@@ -11,23 +11,6 @@ vi.mock('../../src/api.js', async importActual => ({
 }))
 
 describe('name save completion protocol', () => {
-  it('prevents native Escape dismissal while a name save is pending', () => {
-    const form = document.createElement('grampsjs-form-edit-name')
-    form.appState = {i18n: {strings: {}}}
-    form.saving = true
-    let cancelled = 0
-    form.addEventListener('object:cancel', () => {
-      cancelled += 1
-    })
-    const escape = new KeyboardEvent('keydown', {
-      key: 'Escape',
-      cancelable: true,
-    })
-    form._handleDialogKeydown(escape)
-    expect(escape.defaultPrevented).toBe(true)
-    expect(cancelled).toBe(0)
-    expect(form.saving).toBe(true)
-  })
   it('clears drafts only after a successful write and keeps success when refresh throws', async () => {
     vi.mocked(clearDraftsWithPrefix).mockClear()
     const view = new GrampsjsViewPerson()
