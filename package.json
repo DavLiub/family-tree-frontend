@@ -173,7 +173,7 @@
     "jwt-decode": "^4.0.0",
     "lit": "^3.2.1",
     "maplibre-gl": "^5.22.0",
-    "marked": "^18.0.4",
+    "marked": "^18.1.1",
     "pwa-helper-components": "^0.2.10",
     "pwa-helpers": "^0.9.1",
     "tippy.js": "^6.3.7"
