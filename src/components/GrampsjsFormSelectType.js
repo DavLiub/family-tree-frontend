@@ -3,6 +3,11 @@ Element for selecting a Gramps type
 */
 
 import {css, html, LitElement} from 'lit'
+import {keyed} from 'lit/directives/keyed.js'
+import '@awesome.me/webawesome/dist/components/select/select.js'
+import '@awesome.me/webawesome/dist/components/option/option.js'
+import '@awesome.me/webawesome/dist/components/input/input.js'
+import '@awesome.me/webawesome/dist/components/button/button.js'
 import '@material/web/select/filled-select.js'
 import '@material/web/select/select-option.js'
 import '@material/web/textfield/filled-text-field.js'
@@ -23,6 +28,7 @@ class GrampsjsFormSelectType extends GrampsjsAppStateMixin(LitElement) {
 
   static get properties() {
     return {
+      webawesome: {type: Boolean},
       disabled: {type: Boolean},
       loadingTypes: {type: Boolean},
       nocustom: {type: Boolean},
@@ -44,6 +50,7 @@ class GrampsjsFormSelectType extends GrampsjsAppStateMixin(LitElement) {
 
   constructor() {
     super()
+    this.webawesome = false
     this.disabled = false
     this.loadingTypes = false
     this.nocustom = false
@@ -68,16 +75,29 @@ class GrampsjsFormSelectType extends GrampsjsAppStateMixin(LitElement) {
     this.value = ''
     const selectElement = this.renderRoot.querySelector('#select-type')
     if (selectElement) {
-      selectElement.select(this.defaultValue)
+      if (this.webawesome) selectElement.value = this.defaultValue
+      else selectElement.select(this.defaultValue)
     }
   }
 
   updated(changed) {
+    if (
+      this.webawesome &&
+      (this.typeName in (this.types?.default || {}) ||
+        (this.typeNameCustom || this.typeName) in (this.types?.custom || {})) &&
+      !this.loadingTypes &&
+      (changed.has('types') || changed.has('loadingTypes')) &&
+      this.value &&
+      !this.getTypes().includes(this.value)
+    ) {
+      this._hasCustomType = true
+    }
     if (changed.has('types')) {
       const types = this.getTypes()
       if (
         Array.isArray(types) &&
         !types.includes(this.value) &&
+        (!this.webawesome || !this.value) &&
         types.includes(this.defaultValue)
       ) {
         this.#setValue(this.defaultValue)
@@ -90,6 +110,7 @@ class GrampsjsFormSelectType extends GrampsjsAppStateMixin(LitElement) {
   }
 
   render() {
+    if (this.webawesome) return this._renderAwesome()
     return html`
       ${this.noheading ? '' : this.#renderHeading()}
       <p>
@@ -97,6 +118,69 @@ class GrampsjsFormSelectType extends GrampsjsAppStateMixin(LitElement) {
         ${this.nocustom ? '' : this.#renderCustomSwitch()}
       </p>
     `
+  }
+
+  _renderAwesome() {
+    const values = this.getTypes()
+    const options =
+      this.value && !values.includes(this.value)
+        ? [...values, this.value]
+        : values
+    return html` ${this.noheading ? '' : this.#renderHeading()}
+      <p>
+        ${this._hasCustomType
+          ? html`
+              <wa-input
+                id="custom-type"
+                label="${this.label} ${this._('Custom')}"
+                .value=${this.value}
+                ?disabled=${this.disabled || this.loadingTypes}
+                ?required=${this.required}
+                @input=${this.#handleTextFieldInput}
+                @blur=${this.#handleTextFieldBlur}
+              ></wa-input>
+            `
+          : keyed(
+              JSON.stringify(options.map(value => this._(value))),
+              html`
+                <wa-select
+                  id="select-type"
+                  style="width:100%"
+                  label=${this.loadingTypes
+                    ? this._('Loading items...')
+                    : this.label}
+                  .value=${this.value}
+                  ?disabled=${this.disabled || this.loadingTypes}
+                  ?required=${this.required}
+                  @change=${this.#handleSelectChange}
+                  @wa-after-hide=${this.#handleSelectClosing}
+                >
+                  <wa-option value=""></wa-option>
+                  ${options.map(
+                    value =>
+                      html`<wa-option value=${value}
+                        >${this._(value)}</wa-option
+                      >`
+                  )}
+                </wa-select>
+              `
+            )}
+        ${this.#error
+          ? html`<span role="alert">${this._('This field is mandatory')}</span>`
+          : ''}
+        ${this.nocustom
+          ? ''
+          : html` <wa-button
+              appearance="plain"
+              id="button-switch-type"
+              @click=${this.#toggleCustomType}
+              ?disabled=${this.disabled || this.loadingTypes}
+            >
+              ${this._hasCustomType
+                ? this._('Switch to default type')
+                : this._('Add custom type')}
+            </wa-button>`}
+      </p>`
   }
 
   #renderHeading() {
