@@ -9,7 +9,12 @@ export const person = {
   primary_name: {
     _class: 'Name',
     first_name: 'Alexandria Synthetic',
-    surname_list: [{surname: 'Example', primary: true}],
+    surname_list: [
+      {surname: 'Example', prefix: 'van', connector: 'and', primary: true},
+      {surname: 'Sample', origintype: 'Synthetic origin'},
+    ],
+    title: 'Synthetic title',
+    nick: 'Synthetic nickname',
     type: 'Birth Name',
     citation_list: ['synthetic-name-citation'],
     note_list: ['synthetic-name-note'],

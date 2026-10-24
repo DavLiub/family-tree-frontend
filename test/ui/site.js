@@ -118,11 +118,22 @@ export const test = base.extend({
         return reply({message: 'Already configured'}, 405)
       } else if (method === 'GET' && url.pathname === '/api/oidc/config/') {
         return reply({enabled: false})
-      } else if (method === 'POST' && url.pathname === '/api/translations/en') {
+      } else if (
+        method === 'POST' &&
+        /^\/api\/translations\/(en|ru)$/.test(url.pathname)
+      ) {
         return reply(
-          request
-            .postDataJSON()
-            .strings.map(original => ({original, translation: original}))
+          request.postDataJSON().strings.map(original => ({
+            original,
+            translation: url.pathname.endsWith('/ru')
+              ? {
+                  'Given name': 'Имя',
+                  'Name type': 'Тип имени',
+                  _Save: 'Сохранить',
+                  Cancel: 'Отмена',
+                }[original] || original
+              : original,
+          }))
         )
       } else if (
         signedIn &&
@@ -134,11 +145,11 @@ export const test = base.extend({
         const payload = request.postDataJSON()
         nameSave.payloads.push(payload)
         expect(payload.alternate_names).toEqual(person.alternate_names)
-        expect(payload.primary_name.surname_list).toEqual(
-          person.primary_name.surname_list
-        )
-        for (const key of ['date', 'citation_list', 'note_list'])
-          expect(payload.primary_name[key]).toEqual(person.primary_name[key])
+        expect(payload.primary_name).toEqual({
+          ...nameSave.initialName,
+          ...nameSave.expectedName,
+          first_name: payload.primary_name.first_name,
+        })
         for (const [key, value] of Object.entries(person)) {
           if (
             !['primary_name', 'profile', 'extended', 'backlinks'].includes(key)
@@ -221,22 +232,28 @@ export const test = base.extend({
       return route.abort('blockedbyclient')
     })
     const site = {
-      nameSave() {
-        nameSave = {payloads: [], release: null}
+      nameSave(expectedName = {}, initialName = {}) {
+        record.primary_name = {...record.primary_name, ...initialName}
+        nameSave = {
+          payloads: [],
+          release: null,
+          expectedName,
+          initialName: structuredClone(record.primary_name),
+        }
         return nameSave
       },
-      async open(path, auth = true) {
+      async open(path, auth = true, settings = {}) {
         signedIn = auth
         await context.addInitScript(
-          ({accessToken, auth}) => {
+          ({accessToken, auth, settings}) => {
             localStorage.clear()
             localStorage.setItem(
               'grampsjs_settings',
-              JSON.stringify({lang: 'en'})
+              JSON.stringify({lang: 'en', ...settings})
             )
             if (auth) localStorage.setItem('access_token', accessToken)
           },
-          {accessToken, auth}
+          {accessToken, auth, settings}
         )
         await page.goto(path)
       },
