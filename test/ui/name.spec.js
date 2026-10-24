@@ -12,6 +12,8 @@ async function openNameEditor(page, site, settings = {}) {
   await names.locator('md-list-item').first().click()
   // The existing editable-list toolbar has no accessible names; index 1 is Edit.
   await names.locator('md-icon-button').nth(1).click()
+  // The custom-element host has no visible box; assert the rendered dialog.
+  await expect(page.getByRole('dialog')).toBeVisible()
   return names.locator('grampsjs-form-edit-name')
 }
 
@@ -32,7 +34,7 @@ test('name editor retains failed input, blocks duplicate save and retries', asyn
     await expect(input).toBeVisible()
     await expect(submit).not.toHaveAttribute('disabled', '')
     await input.fill('Alexandria Revised')
-    await expect(form.locator('wa-dialog')).toBeVisible()
+    await expect(dialog).toBeVisible()
     await noOverflow(page)
     await expect(submit).toHaveText('Save')
     await expect(submit).not.toHaveAttribute('disabled', '')
