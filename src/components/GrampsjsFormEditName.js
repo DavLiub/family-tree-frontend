@@ -2,16 +2,118 @@
 Form for adding a new event reference
 */
 
-import {html} from 'lit'
+import {html, css} from 'lit'
+import '@awesome.me/webawesome/dist/components/dialog/dialog.js'
+import '@awesome.me/webawesome/dist/components/button/button.js'
+import '@awesome.me/webawesome/dist/translations/ru.js'
 
 import './GrampsjsFormName.js'
 import './GrampsjsFormSelectType.js'
 
 import {fireEvent} from '../util.js'
+import {waThemeStyles} from '../SharedStyles.js'
 
 import {GrampsjsObjectForm} from './GrampsjsObjectForm.js'
 
 class GrampsjsFormEditName extends GrampsjsObjectForm {
+  static get styles() {
+    return [
+      super.styles,
+      waThemeStyles,
+      css`
+        wa-dialog {
+          --width: 44rem;
+        }
+        wa-dialog::part(dialog) {
+          max-height: calc(100dvh - 2rem);
+        }
+        .actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.5rem;
+          justify-content: flex-end;
+        }
+        [role='alert'] {
+          color: var(--md-sys-color-error);
+        }
+      `,
+    ]
+  }
+
+  render() {
+    return html`<wa-dialog
+      open
+      label=${this.dialogTitle || this._('Name')}
+      lang=${this.appState?.i18n?.lang ||
+      this.appState?.settings?.lang ||
+      document.documentElement.lang ||
+      'en'}
+      @wa-hide=${this._handleAwesomeHide}
+    >
+      <div @formdata:changed=${this._handleFormData}>${this.renderForm()}</div>
+      <div slot="footer" class="actions">
+        ${this.hideCancelButton
+          ? ''
+          : html`<wa-button
+              ?disabled=${this.saving}
+              @click=${this._handleDialogCancel}
+              >${this._('Cancel')}</wa-button
+            >`}
+        ${this.hideSaveButton
+          ? ''
+          : html`<wa-button
+              variant="brand"
+              ?disabled=${!this.isValid || this.saving}
+              ?loading=${this.saving}
+              @click=${this._handleDialogSave}
+              >${this._('_Save')}</wa-button
+            >`}
+      </div>
+    </wa-dialog>`
+  }
+
+  connectedCallback() {
+    let opener = document.activeElement
+    while (opener?.shadowRoot?.activeElement) {
+      opener = opener.shadowRoot.activeElement
+    }
+    this._opener = opener
+    super.connectedCallback()
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback()
+    const opener = this._opener
+    queueMicrotask(() => {
+      if (opener?.isConnected && typeof opener.focus === 'function') {
+        opener.focus()
+      }
+    })
+  }
+
+  updated(changed) {
+    if (['data', 'types', 'loadingTypes'].some(key => changed.has(key))) {
+      const select = this.renderRoot.querySelector('grampsjs-form-select-type')
+      select?.updateComplete.then(() => this.checkFormValidity())
+    }
+  }
+
+  _handleAwesomeHide(e) {
+    // A select's dropdown also emits wa-hide and must not close the form.
+    if (e.target !== this.renderRoot.querySelector('wa-dialog')) return
+    e.preventDefault()
+    this._handleDialogCancel()
+  }
+
+  _openDialog() {
+    const dialog = this.renderRoot.querySelector('wa-dialog')
+    if (dialog) dialog.open = true
+  }
+
+  get dialogIsOpen() {
+    return this.renderRoot.querySelector('wa-dialog')?.open ?? false
+  }
+
   static get properties() {
     return {
       isFormValid: {type: Boolean},
@@ -30,6 +132,7 @@ class GrampsjsFormEditName extends GrampsjsObjectForm {
     return html`
       <div ?inert=${this.saving} aria-busy=${this.saving}>
         <grampsjs-form-select-type
+          webawesome
           required
           id="name-type"
           noheading
@@ -46,6 +149,7 @@ class GrampsjsFormEditName extends GrampsjsObjectForm {
         </grampsjs-form-select-type>
 
         <grampsjs-form-name
+          webawesome
           origintype
           id="name"
           @formdata:changed="${this._handleFormData}"

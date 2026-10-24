@@ -454,5 +454,10 @@
   "Unable to load person": "Unable to load person",
   "Unable to save person": "Unable to save person",
   "This person has changed. Reload the card before saving.": "This person has changed. Reload the card before saving.",
-  "Edit dates, places, relatives and additional names in the page sections.": "Edit dates, places, relatives and additional names in the page sections."
+  "Edit dates, places, relatives and additional names in the page sections.": "Edit dates, places, relatives and additional names in the page sections.",
+  "Log in": "Log in",
+  "Sending reset link...": "Sending reset link...",
+  "Unable to sign in. Please try again.": "Unable to sign in. Please try again.",
+  "Unable to send reset link. Please try again.": "Unable to send reset link. Please try again.",
+  "Username must not be empty.": "Username must not be empty."
 }

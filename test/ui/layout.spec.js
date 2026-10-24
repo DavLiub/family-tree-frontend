@@ -5,13 +5,15 @@ test('login exposes labelled credentials and a visible submit action', async ({
   site,
 }) => {
   await site.open('/login', false)
-  await expect(page.getByLabel('Username', {exact: true})).toBeVisible()
-  await expect(page.getByLabel('Password', {exact: true})).toHaveAttribute(
+  await expect(page.getByLabel(/^Username(?:\s*\*)?$/)).toBeVisible()
+  await expect(page.getByLabel(/^Password(?:\s*\*)?$/)).toHaveAttribute(
     'type',
     'password'
   )
   await expect(
-    page.locator('grampsjs-login md-filled-button[type="submit"]')
+    page
+      .locator('grampsjs-login')
+      .getByRole('button', {name: 'Log in', exact: true})
   ).toBeVisible()
   await noOverflow(page)
 })

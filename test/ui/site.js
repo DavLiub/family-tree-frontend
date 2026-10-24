@@ -53,6 +53,7 @@ export const test = base.extend({
     const accessToken = token()
     let record = structuredClone(person)
     let nameSave
+    let login
     let signedIn = false
     const recordError = owner => error =>
       errors.push({
@@ -101,6 +102,18 @@ export const test = base.extend({
       }
       if (!url.pathname.startsWith('/api/')) {
         if (
+          login &&
+          signedIn &&
+          url.pathname === '/' &&
+          request.resourceType() === 'document'
+        ) {
+          return route.fulfill({
+            status: 200,
+            contentType: 'text/html',
+            body: '<!doctype html><title>Synthetic sign-in destination</title><h1>Signed in</h1>',
+          })
+        }
+        if (
           method === 'GET' &&
           (pages.has(url.pathname) || asset.test(url.pathname))
         ) {
@@ -117,12 +130,48 @@ export const test = base.extend({
         // A simulated refusal: no request ever reaches a backend.
         return reply({message: 'Already configured'}, 405)
       } else if (method === 'GET' && url.pathname === '/api/oidc/config/') {
-        return reply({enabled: false})
-      } else if (method === 'POST' && url.pathname === '/api/translations/en') {
+        return reply(login?.oidcConfig || {enabled: false})
+      } else if (login && method === 'POST' && url.pathname === '/api/token/') {
+        login.attempts.push(request.postDataJSON())
+        if (login.attempts.length === 1) {
+          await new Promise(resolve => {
+            login.release = resolve
+          })
+          return reply({message: 'Synthetic login refusal'}, 401)
+        }
+        signedIn = true
+        return reply({
+          access_token: accessToken,
+          refresh_token: 'synthetic-refresh',
+        })
+      } else if (
+        login &&
+        method === 'POST' &&
+        url.pathname === '/api/users/synthetic-user/password/reset/trigger/'
+      ) {
+        login.resets += 1
+        await new Promise(resolve => {
+          login.releaseReset = resolve
+        })
+        return reply({}, 202)
+      } else if (
+        method === 'POST' &&
+        /^\/api\/translations\/(en|ru)$/.test(url.pathname)
+      ) {
         return reply(
-          request
-            .postDataJSON()
-            .strings.map(original => ({original, translation: original}))
+          request.postDataJSON().strings.map(original => ({
+            original,
+            translation: url.pathname.endsWith('/ru')
+              ? {
+                  'Given name': 'Имя',
+                  'Name type': 'Тип имени',
+                  _Save: 'Сохранить',
+                  Cancel: 'Отмена',
+                  Username: 'Имя пользователя',
+                  Password: 'Пароль',
+                }[original] || original
+              : original,
+          }))
         )
       } else if (
         signedIn &&
@@ -134,11 +183,11 @@ export const test = base.extend({
         const payload = request.postDataJSON()
         nameSave.payloads.push(payload)
         expect(payload.alternate_names).toEqual(person.alternate_names)
-        expect(payload.primary_name.surname_list).toEqual(
-          person.primary_name.surname_list
-        )
-        for (const key of ['date', 'citation_list', 'note_list'])
-          expect(payload.primary_name[key]).toEqual(person.primary_name[key])
+        expect(payload.primary_name).toEqual({
+          ...nameSave.initialName,
+          ...nameSave.expectedName,
+          first_name: payload.primary_name.first_name,
+        })
         for (const [key, value] of Object.entries(person)) {
           if (
             !['primary_name', 'profile', 'extended', 'backlinks'].includes(key)
@@ -221,22 +270,45 @@ export const test = base.extend({
       return route.abort('blockedbyclient')
     })
     const site = {
-      nameSave() {
-        nameSave = {payloads: [], release: null}
+      login(oidcConfig) {
+        login = {
+          attempts: [],
+          resets: 0,
+          release: null,
+          releaseReset: null,
+          oidcConfig,
+        }
+        return login
+      },
+      nameSave(expectedName = {}, initialName = {}) {
+        record.primary_name = {...record.primary_name, ...initialName}
+        nameSave = {
+          payloads: [],
+          release: null,
+          expectedName,
+          initialName: structuredClone(record.primary_name),
+        }
         return nameSave
       },
-      async open(path, auth = true) {
+      async open(path, auth = true, settings = {}) {
         signedIn = auth
         await context.addInitScript(
-          ({accessToken, auth}) => {
+          ({accessToken, auth, settings, initializeOnce}) => {
+            if (
+              initializeOnce &&
+              sessionStorage.getItem('synthetic-login-initialized')
+            )
+              return
+            if (initializeOnce)
+              sessionStorage.setItem('synthetic-login-initialized', 'true')
             localStorage.clear()
             localStorage.setItem(
               'grampsjs_settings',
-              JSON.stringify({lang: 'en'})
+              JSON.stringify({lang: 'en', ...settings})
             )
             if (auth) localStorage.setItem('access_token', accessToken)
           },
-          {accessToken, auth}
+          {accessToken, auth, settings, initializeOnce: Boolean(login)}
         )
         await page.goto(path)
       },
@@ -245,6 +317,8 @@ export const test = base.extend({
       await use(site)
     } finally {
       nameSave?.release?.()
+      login?.release?.()
+      login?.releaseReset?.()
     }
     expect(
       unexpected,
