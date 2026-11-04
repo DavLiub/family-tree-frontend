@@ -1,4 +1,5 @@
 import {test, expect, noOverflow} from './site.js'
+import {expectLoginFields, loginControls} from './login.js'
 
 test('login keeps credentials after refusal and submits once before redirecting', async ({
   page,
@@ -6,9 +7,7 @@ test('login keeps credentials after refusal and submits once before redirecting'
 }) => {
   const login = site.login()
   await site.open('/login', false)
-  const form = page.locator('grampsjs-login')
-  const username = form.getByLabel(/^Username(?:\s*\*)?$/)
-  const password = form.getByLabel(/^Password(?:\s*\*)?$/)
+  const {form, username, password} = await expectLoginFields(page)
   const submit = form.getByRole('button', {name: 'Log in', exact: true})
   await username.fill('synthetic-user')
   await password.fill('synthetic-password')
@@ -48,11 +47,11 @@ test('password reset is keyboard accessible, blocks duplicates and returns to lo
 }) => {
   const login = site.login()
   await site.open('/login', false)
-  const form = page.locator('grampsjs-login')
+  const {form} = await expectLoginFields(page)
   const lost = form.getByRole('button', {name: 'Lost password?', exact: true})
   await lost.focus()
   await page.keyboard.press('Enter')
-  const username = form.getByLabel(/^Username(?:\s*\*)?$/)
+  const {username} = await expectLoginFields(page, {reset: true})
   await username.fill('synthetic-user')
   await username.press('Enter')
   await expect.poll(() => login.resets).toBe(1)
@@ -69,7 +68,7 @@ test('password reset is keyboard accessible, blocks duplicates and returns to lo
   await expect(
     form.getByRole('button', {name: 'Log in', exact: true})
   ).toBeVisible()
-  await expect(form.getByLabel(/^Password(?:\s*\*)?$/)).toBeVisible()
+  await expectLoginFields(page)
 })
 
 test('Russian login fits 320px with visible primary and secondary actions', async ({
@@ -78,9 +77,7 @@ test('Russian login fits 320px with visible primary and secondary actions', asyn
 }) => {
   await page.setViewportSize({width: 320, height: 640})
   await site.open('/login', false, {lang: 'ru', theme: 'dark'})
-  const form = page.locator('grampsjs-login')
-  await expect(form.getByLabel(/^Имя пользователя(?:\s*\*)?$/)).toBeVisible()
-  await expect(form.getByLabel(/^Пароль(?:\s*\*)?$/)).toBeVisible()
+  const {form} = await expectLoginFields(page, {lang: 'ru'})
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
   const submit = form.getByRole('button', {name: 'Войти', exact: true})
   await expect(submit).toBeVisible()
@@ -102,12 +99,12 @@ test('provider-only login does not expose local credentials or password reset', 
     providers: [{id: 'synthetic-provider', name: 'Synthetic provider'}],
   })
   await site.open('/login', false)
-  const form = page.locator('grampsjs-login')
+  const {form, username, password} = loginControls(page)
   await expect(
     form.getByRole('button', {name: 'Continue with Synthetic provider'})
   ).toBeVisible()
-  await expect(form.getByLabel(/^Username(?:\s*\*)?$/)).toHaveCount(0)
-  await expect(form.getByLabel(/^Password(?:\s*\*)?$/)).toHaveCount(0)
+  await expect(username).toHaveCount(0)
+  await expect(password).toHaveCount(0)
   await expect(
     form.getByRole('button', {name: 'Lost password?', exact: true})
   ).toHaveCount(0)
