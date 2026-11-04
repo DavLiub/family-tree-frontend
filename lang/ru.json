@@ -455,5 +455,10 @@
     "Unable to load person": "Не удалось загрузить карточку",
     "Unable to save person": "Не удалось сохранить карточку",
     "This person has changed. Reload the card before saving.": "Карточка была изменена. Загрузите её заново перед сохранением.",
-    "Edit dates, places, relatives and additional names in the page sections.": "Даты, места, родственников и дополнительные имена можно изменить в соответствующих разделах страницы."
+    "Edit dates, places, relatives and additional names in the page sections.": "Даты, места, родственников и дополнительные имена можно изменить в соответствующих разделах страницы.",
+    "Log in": "Войти",
+    "Sending reset link...": "Отправка ссылки...",
+    "Unable to sign in. Please try again.": "Не удалось войти. Попробуйте ещё раз.",
+    "Unable to send reset link. Please try again.": "Не удалось отправить ссылку. Попробуйте ещё раз.",
+    "Username must not be empty.": "Введите имя пользователя."
 }
