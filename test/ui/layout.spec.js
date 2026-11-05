@@ -1,17 +1,16 @@
 import {test, expect, noOverflow} from './site.js'
+import {expectLoginFields} from './login.js'
 
 test('login exposes labelled credentials and a visible submit action', async ({
   page,
   site,
 }) => {
   await site.open('/login', false)
-  await expect(page.getByLabel('Username', {exact: true})).toBeVisible()
-  await expect(page.getByLabel('Password', {exact: true})).toHaveAttribute(
-    'type',
-    'password'
-  )
+  await expectLoginFields(page)
   await expect(
-    page.locator('grampsjs-login md-filled-button[type="submit"]')
+    page
+      .locator('grampsjs-login')
+      .getByRole('button', {name: 'Log in', exact: true})
   ).toBeVisible()
   await noOverflow(page)
 })

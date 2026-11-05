@@ -11,6 +11,7 @@ import './GrampsjsFormName.js'
 import './GrampsjsFormSelectType.js'
 
 import {fireEvent} from '../util.js'
+import {waThemeStyles} from '../SharedStyles.js'
 
 import {GrampsjsObjectForm} from './GrampsjsObjectForm.js'
 
@@ -18,26 +19,8 @@ class GrampsjsFormEditName extends GrampsjsObjectForm {
   static get styles() {
     return [
       super.styles,
+      waThemeStyles,
       css`
-        :host {
-          color: var(--md-sys-color-on-surface);
-          --wa-color-brand-on-quiet: var(--md-sys-color-primary);
-          --wa-color-brand-on-normal: var(--md-sys-color-on-primary-container);
-          --wa-color-neutral-on-quiet: var(--md-sys-color-on-surface);
-          --wa-color-neutral-on-normal: var(--md-sys-color-on-surface);
-          --wa-color-neutral-fill-quiet: var(
-            --md-sys-color-surface-container-highest
-          );
-          --wa-color-text-quiet: var(--md-sys-color-on-surface-variant);
-          --wa-color-brand-on-loud: var(--md-sys-color-on-primary);
-          --wa-color-surface-lowered: var(--md-sys-color-surface-container);
-          --wa-form-control-background-color: var(--md-sys-color-surface);
-          --wa-form-control-value-color: var(--md-sys-color-on-surface);
-          --wa-form-control-label-color: var(--md-sys-color-on-surface);
-          --wa-form-control-placeholder-color: var(
-            --md-sys-color-on-surface-variant
-          );
-        }
         wa-dialog {
           --width: 44rem;
         }
