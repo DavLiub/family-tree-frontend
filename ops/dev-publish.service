@@ -1,0 +1,21 @@
+[Unit]
+Description=Publish successful Family Tree dev CI artifact
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/opt/sites/family-tree/dev-runtime
+Environment=HOME=/home/ubuntu
+ExecStart=/usr/bin/python3 /opt/sites/family-tree/dev-runtime/dev-publish.py
+TimeoutStartSec=300
+UMask=0022
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/opt/sites/family-tree/dev-runtime
+MemoryMax=256M
+CPUQuota=25%

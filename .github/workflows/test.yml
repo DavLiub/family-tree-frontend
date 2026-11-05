@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
   pull_request:
   workflow_dispatch:
 
@@ -30,6 +30,8 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run build
+      - name: Archive exact build sources
+        run: git archive --format=tar.gz HEAD -o dist/family-interface-source.tar.gz
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: ui-build
@@ -90,7 +92,7 @@ jobs:
           retention-days: 7
 
   ui:
-    name: "${{ github.event_name == 'pull_request' && 'UI smoke (PR)' || 'UI regression (full)' }}"
+    name: "${{ github.event_name == 'pull_request' && github.base_ref != 'main' && 'UI smoke (PR)' || 'UI regression (full)' }}"
     needs: checks
     # Keep browser system dependencies on a fixed supported Ubuntu release.
     runs-on: ubuntu-24.04
@@ -112,10 +114,10 @@ jobs:
         timeout-minutes: 4
         run: npx --no-install playwright install --with-deps chromium
       - name: UI smoke before merge (desktop)
-        if: ${{ github.event_name == 'pull_request' }}
+        if: ${{ github.event_name == 'pull_request' && github.base_ref != 'main' }}
         run: npm run test:ui:smoke
       - name: Full UI regression (desktop and mobile)
-        if: ${{ github.event_name != 'pull_request' }}
+        if: ${{ github.event_name != 'pull_request' || github.base_ref == 'main' }}
         run: npm run test:ui
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: ${{ !cancelled() }}
