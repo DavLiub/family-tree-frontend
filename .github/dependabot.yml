@@ -2,35 +2,56 @@ version: 2
 updates:
   - package-ecosystem: npm
     directory: /
+    target-branch: dev
     schedule:
       interval: weekly
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 5
+    # Major toolchain migrations are planned separately; security updates
+    # continue to use the default branch under GitHub's security policy.
+    ignore:
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
     groups:
+      vitest:
+        patterns:
+          - vitest
+          - '@vitest/*'
       material:
         patterns:
-          - "@material/*"
+          - '@material/*'
       lit:
         patterns:
-          - "lit"
-          - "@lit/*"
-          - "lit-*"
+          - lit
+          - '@lit/*'
+          - 'lit-*'
       rollup:
         patterns:
-          - "rollup"
-          - "@rollup/*"
-          - "rollup-*"
+          - rollup
+          - '@rollup/*'
+          - 'rollup-*'
+          - '@web/rollup-plugin-html'
       d3:
         patterns:
-          - "d3"
-          - "d3-*"
+          - d3
+          - 'd3-*'
       eslint:
         patterns:
-          - "eslint"
-          - "@eslint/*"
-          - "eslint-*"
-          - "@typescript-eslint/*"
+          - eslint
+          - '@eslint/*'
+          - 'eslint-*'
+          - '@typescript-eslint/*'
 
   - package-ecosystem: github-actions
     directory: /
+    target-branch: dev
     schedule:
       interval: weekly
+    open-pull-requests-limit: 2
+    exclude-paths:
+      - '.github/workflows/image-devel.yml'
+      - '.github/workflows/image-release.yml'
+      - '.github/workflows/release.yml'
+    groups:
+      ci-actions:
+        patterns:
+          - 'actions/*'
