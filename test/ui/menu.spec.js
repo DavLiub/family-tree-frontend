@@ -84,9 +84,17 @@ test('Russian family menu fits a 320px drawer and reveals additional sections', 
   const photos = menu.getByRole('link', {name: 'Фото и документы', exact: true})
   await expect(photos).toBeVisible()
   await expect(photos).toHaveAttribute('href', '/medialist')
-  const box = await photos.boundingBox()
-  expect(box.x).toBeGreaterThanOrEqual(0)
-  expect(box.x + box.width).toBeLessThanOrEqual(320)
+  // Visibility can precede the end of the drawer's slide-in transition.
+  // Wait for the actual viewport bounds, without relaxing either boundary.
+  await expect
+    .poll(async () => (await photos.boundingBox())?.x ?? -Infinity)
+    .toBeGreaterThanOrEqual(0)
+  await expect
+    .poll(async () => {
+      const box = await photos.boundingBox()
+      return box ? box.x + box.width : Infinity
+    })
+    .toBeLessThanOrEqual(320)
   const summary = menu.locator('summary')
   await expect(summary).toHaveAccessibleName('Дополнительно')
   await summary.click()
