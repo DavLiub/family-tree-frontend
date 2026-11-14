@@ -1,12 +1,6 @@
-/*
-The dropdown menu for adding objects in the top app bar
-*/
+/* Main navigation for the family site. */
 
-import {html, css, LitElement} from 'lit'
-import '@material/web/list/list'
-import '@material/web/list/list-item'
-import '@material/web/divider/divider'
-
+import {html, css, LitElement, nothing} from 'lit'
 import {
   mdiFamilyTree,
   mdiCreation,
@@ -32,45 +26,203 @@ import './GrampsjsIcon.js'
 
 const BASE_DIR = ''
 
-const selectedColor = 'var(--grampsjs-color-icon-selected)'
-const defaultColor = 'var(--grampsjs-color-icon-default)'
+const primaryItems = [
+  {path: 'tree', label: 'Family Tree', icon: mdiFamilyTree, pages: ['tree']},
+  {
+    path: 'people',
+    label: 'People',
+    icon: mdiFormatListBulleted,
+    pages: ['people', 'person', 'new_person'],
+  },
+  {
+    path: 'medialist',
+    label: 'Photos and documents',
+    icon: mdiImage,
+    pages: ['medialist', 'media', 'new_media'],
+  },
+]
 
-class GrampsjsAppBar extends GrampsjsAppStateMixin(LitElement) {
+const secondaryItems = [
+  {path: '', label: 'Home', icon: mdiHome, pages: ['home']},
+  {
+    path: 'bookmarks',
+    label: '_Bookmarks',
+    icon: mdiBookmark,
+    pages: ['bookmarks'],
+  },
+  {
+    path: 'notifications',
+    label: 'Notifications',
+    icon: mdiBell,
+    pages: ['notifications'],
+  },
+]
+
+const additionalItems = [
+  {path: 'blog', label: 'Blog', icon: mdiRss, pages: ['blog']},
+  {
+    path: 'timeline',
+    label: 'Timeline',
+    icon: mdiTimelineOutline,
+    pages: ['timeline'],
+  },
+  {path: 'map', label: 'Map', icon: mdiMap, pages: ['map']},
+  {
+    path: 'dna-matches',
+    label: 'DNA',
+    icon: mdiDna,
+    pages: ['dna-matches', 'dna-chromosome', 'ydna'],
+  },
+  {
+    path: 'families',
+    label: 'Lists',
+    icon: mdiFormatListBulleted,
+    pages: [
+      'families',
+      'family',
+      'new_family',
+      'events',
+      'event',
+      'new_event',
+      'places',
+      'place',
+      'new_place',
+      'citations',
+      'citation',
+      'new_citation',
+      'sources',
+      'source',
+      'new_source',
+      'repositories',
+      'repository',
+      'new_repository',
+      'notes',
+      'note',
+      'new_note',
+      'tags',
+    ],
+  },
+  {path: 'chat', label: 'Assistant', icon: mdiCreation, pages: ['chat']},
+  {path: 'recent', label: 'History', icon: mdiHistory, pages: ['recent']},
+  {
+    path: 'tasks',
+    label: 'Tasks',
+    icon: mdiFormatListChecks,
+    pages: ['tasks', 'task', 'new_task'],
+  },
+  {
+    path: 'reports',
+    label: '_Reports',
+    icon: mdiFileExportOutline,
+    pages: ['reports', 'report'],
+  },
+  {path: 'export', label: 'Export', icon: mdiDownload, pages: ['export']},
+  {
+    path: 'revisions',
+    label: 'Revisions',
+    icon: mdiSourceCommit,
+    pages: ['revisions', 'revision'],
+  },
+]
+
+class GrampsjsMainMenu extends GrampsjsAppStateMixin(LitElement) {
   static get styles() {
     return [
       sharedStyles,
       css`
-        md-list-item {
-          --md-list-item-label-text-color: var(--grampsjs-color-drawer-text);
-          --md-list-item-label-text-size: 1rem;
-          --md-list-item-label-text-weight: 400;
-          --md-list-item-one-line-container-height: 40px;
+        :host {
+          display: block;
+          min-width: 0;
         }
 
-        md-list-item[selected] {
-          --md-list-item-label-text-color: var(--grampsjs-color-icon-selected);
-          --md-list-item-label-text-weight: 500;
+        nav {
+          color: var(--grampsjs-color-drawer-text);
+          padding-block: 0.5rem;
         }
 
-        md-divider {
-          --md-divider-thickness: 1px;
-          --md-divider-color: rgba(0, 0, 0, 0.12);
-          padding: 0 20px;
-          margin: 4px 0;
+        ul {
+          list-style: none;
+          padding: 0;
+          margin: 0;
+        }
+
+        a:any-link,
+        summary {
+          box-sizing: border-box;
+          min-height: 44px;
+          margin-inline: 0.5rem;
+          padding: 0.625rem 0.75rem;
+          border-radius: 0.5rem;
+          color: inherit;
+          font-size: 1rem;
+          line-height: 1.5;
+          text-decoration: none;
+          cursor: pointer;
+          overflow-wrap: anywhere;
+        }
+
+        a {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+        }
+
+        a:hover,
+        summary:hover {
+          background: var(--md-sys-color-surface-container-highest);
+        }
+
+        a:focus-visible,
+        summary:focus-visible {
+          outline: 2px solid var(--md-sys-color-primary);
+          outline-offset: -2px;
+        }
+
+        a[aria-current='page'] {
+          color: var(--grampsjs-color-icon-selected);
+          background: var(--md-sys-color-secondary-container);
+          font-weight: 500;
+        }
+
+        grampsjs-icon {
+          flex: 0 0 24px;
+          pointer-events: none;
+        }
+
+        .label {
+          min-width: 0;
+          flex: 1;
+        }
+
+        .secondary,
+        details {
+          border-top: 1px solid var(--md-sys-color-outline-variant);
+          margin-top: 0.5rem;
+          padding-top: 0.5rem;
+        }
+
+        summary {
+          display: list-item;
+          padding-inline-start: 1rem;
+          list-style-position: inside;
+        }
+
+        summary.active {
+          color: var(--grampsjs-color-icon-selected);
+          font-weight: 500;
         }
 
         .unread-badge {
+          flex: 0 0 auto;
           min-width: 18px;
-          height: 18px;
           padding: 0 4px;
           border-radius: 9px;
           background: var(--md-sys-color-error, #b00020);
-          color: #fff;
+          color: var(--md-sys-color-on-error, #fff);
           font-size: 11px;
           font-weight: 700;
           line-height: 18px;
           text-align: center;
-          box-sizing: border-box;
         }
       `,
     ]
@@ -78,21 +230,16 @@ class GrampsjsAppBar extends GrampsjsAppStateMixin(LitElement) {
 
   static get properties() {
     return {
-      editMode: {type: Boolean},
-      editTitle: {type: String},
-      editDialogContent: {type: String},
-      saveButton: {type: Boolean},
       unreadCount: {type: Number},
+      _moreOpen: {state: true},
     }
   }
 
   constructor() {
     super()
-    this.editMode = false
-    this.editTitle = ''
-    this.editDialogContent = ''
-    this.saveButton = false
     this.unreadCount = 0
+    this._moreOpen = false
+    this._lastPage = undefined
     this._boundHandleNotifications = this._handleNotificationsChanged.bind(this)
   }
 
@@ -114,178 +261,82 @@ class GrampsjsAppBar extends GrampsjsAppStateMixin(LitElement) {
     )
   }
 
+  willUpdate(changed) {
+    const page = this.appState?.path?.page || 'home'
+    if (changed.has('appState') && page !== this._lastPage) {
+      this._lastPage = page
+      this._moreOpen = this._additionalItems().some(item =>
+        item.pages.includes(page)
+      )
+    }
+  }
+
   _handleNotificationsChanged(e) {
     this.unreadCount = e.detail.unreadCount
   }
 
-  _icon(path, isSelected) {
-    return html`<grampsjs-icon
-      slot="start"
-      path="${path}"
-      color="${isSelected ? selectedColor : defaultColor}"
-    ></grampsjs-icon>`
+  _additionalItems() {
+    return additionalItems.filter(item => {
+      if (item.path === 'dna-matches')
+        return !this.appState.frontendConfig?.hideDNALink
+      if (item.path === 'chat') return this.canUseChat
+      if (item.path === 'revisions')
+        return this.appState.permissions?.canViewPrivate
+      return true
+    })
+  }
+
+  _renderItem(item) {
+    const selected = item.pages.includes(this.appState?.path?.page || 'home')
+    const notifications = item.path === 'notifications'
+    const icon =
+      notifications && this.unreadCount > 0 ? mdiBellBadge : item.icon
+    return html`<li>
+      <a
+        href=${`${BASE_DIR}/${item.path}`}
+        aria-current=${selected ? 'page' : nothing}
+      >
+        <grampsjs-icon
+          path=${icon}
+          color=${selected
+            ? 'var(--grampsjs-color-icon-selected)'
+            : 'var(--grampsjs-color-icon-default)'}
+          aria-hidden="true"
+        ></grampsjs-icon>
+        <span class="label">${this._(item.label)}</span>
+        ${notifications && this.unreadCount > 0
+          ? html`<span class="unread-badge">${this.unreadCount}</span>`
+          : ''}
+      </a>
+    </li>`
   }
 
   render() {
-    const p = this.appState.path.page
-    const listsPages = [
-      'people',
-      'families',
-      'events',
-      'places',
-      'citations',
-      'sources',
-      'repositories',
-      'notes',
-    ]
-    return html` <md-list>
-      <md-list-item
-        type="link"
-        href="${BASE_DIR + '/'}"
-        ?selected="${p === 'home'}"
+    const extra = this._additionalItems()
+    const page = this.appState?.path?.page || 'home'
+    const extraSelected = extra.some(item => item.pages.includes(page))
+    return html`<nav aria-label=${this._('Main navigation')}>
+      <ul class="primary">
+        ${primaryItems.map(item => this._renderItem(item))}
+      </ul>
+      <ul class="secondary">
+        ${secondaryItems.map(item => this._renderItem(item))}
+      </ul>
+      <details
+        .open=${this._moreOpen}
+        @toggle=${e => {
+          this._moreOpen = e.currentTarget.open
+        }}
       >
-        ${this._icon(mdiHome, p === 'home')} ${this._('Home')}
-      </md-list-item>
-      <md-list-item
-        type="link"
-        href="${BASE_DIR}/blog"
-        ?selected="${p === 'blog'}"
-      >
-        ${this._icon(mdiRss, p === 'blog')} ${this._('Blog')}
-      </md-list-item>
-      <md-list-item
-        type="link"
-        href="${BASE_DIR}/tree"
-        ?selected="${p === 'tree'}"
-      >
-        ${this._icon(mdiFamilyTree, p === 'tree')} ${this._('Family Tree')}
-      </md-list-item>
-      <md-list-item
-        type="link"
-        href="${BASE_DIR}/timeline"
-        ?selected="${p === 'timeline'}"
-      >
-        ${this._icon(mdiTimelineOutline, p === 'timeline')}
-        ${this._('Timeline')}
-      </md-list-item>
-      <md-list-item
-        type="link"
-        href="${BASE_DIR}/map"
-        ?selected="${p === 'map'}"
-      >
-        ${this._icon(mdiMap, p === 'map')} ${this._('Map')}
-      </md-list-item>
-      ${this.appState.frontendConfig.hideDNALink
-        ? ''
-        : html`
-            <md-list-item
-              type="link"
-              href="${BASE_DIR}/dna-matches"
-              ?selected="${['dna-matches', 'dna-chromosome', 'ydna'].includes(
-                p
-              )}"
-            >
-              ${this._icon(
-                mdiDna,
-                ['dna-matches', 'dna-chromosome', 'ydna'].includes(p)
-              )}
-              ${this._('DNA')}
-            </md-list-item>
-          `}
-      <md-list-item
-        type="link"
-        href="${BASE_DIR}/people"
-        ?selected="${listsPages.includes(p)}"
-      >
-        ${this._icon(mdiFormatListBulleted, listsPages.includes(p))}
-        ${this._('Lists')}
-      </md-list-item>
-      <md-list-item
-        type="link"
-        href="${BASE_DIR}/medialist"
-        ?selected="${p === 'medialist'}"
-      >
-        ${this._icon(mdiImage, p === 'medialist')} ${this._('Media')}
-      </md-list-item>
-      ${this.canUseChat
-        ? html`
-            <md-list-item
-              type="link"
-              href="${BASE_DIR}/chat"
-              ?selected="${p === 'chat'}"
-            >
-              ${this._icon(mdiCreation, p === 'chat')} ${this._('Assistant')}
-            </md-list-item>
-          `
-        : ''}
-      <md-divider inset></md-divider>
-      <md-list-item
-        type="link"
-        href="${BASE_DIR}/recent"
-        ?selected="${p === 'recent'}"
-      >
-        ${this._icon(mdiHistory, p === 'recent')} ${this._('History')}
-      </md-list-item>
-      <md-list-item
-        type="link"
-        href="${BASE_DIR}/bookmarks"
-        ?selected="${p === 'bookmarks'}"
-      >
-        ${this._icon(mdiBookmark, p === 'bookmarks')} ${this._('_Bookmarks')}
-      </md-list-item>
-      <md-list-item
-        type="link"
-        href="${BASE_DIR}/tasks"
-        ?selected="${p === 'tasks'}"
-      >
-        ${this._icon(mdiFormatListChecks, p === 'tasks')} ${this._('Tasks')}
-      </md-list-item>
-      <md-list-item
-        type="link"
-        href="${BASE_DIR}/reports"
-        ?selected="${p === 'reports'}"
-      >
-        ${this._icon(mdiFileExportOutline, p === 'reports')}
-        ${this._('_Reports').replace('_', '')}
-      </md-list-item>
-      <md-list-item
-        type="link"
-        href="${BASE_DIR}/export"
-        ?selected="${p === 'export'}"
-      >
-        ${this._icon(mdiDownload, p === 'export')} ${this._('Export')}
-      </md-list-item>
-      <md-divider inset></md-divider>
-      ${this.appState.permissions.canViewPrivate
-        ? html`
-            <md-list-item
-              type="link"
-              href="${BASE_DIR}/revisions"
-              ?selected="${p === 'revisions'}"
-            >
-              ${this._icon(mdiSourceCommit, p === 'revisions')}
-              ${this._('Revisions')}
-            </md-list-item>
-          `
-        : ''}
-      <md-list-item
-        type="link"
-        href="${BASE_DIR}/notifications"
-        ?selected="${p === 'notifications'}"
-      >
-        ${this._icon(
-          this.unreadCount > 0 ? mdiBellBadge : mdiBell,
-          p === 'notifications'
-        )}
-        ${this._('Notifications')}
-        ${this.unreadCount > 0
-          ? html`<span class="unread-badge" slot="end"
-              >${this.unreadCount}</span
-            >`
-          : ''}
-      </md-list-item>
-    </md-list>`
+        <summary class=${extraSelected ? 'active' : ''}>
+          ${this._('More')}
+        </summary>
+        <ul>
+          ${extra.map(item => this._renderItem(item))}
+        </ul>
+      </details>
+    </nav>`
   }
 }
 
-window.customElements.define('grampsjs-main-menu', GrampsjsAppBar)
+window.customElements.define('grampsjs-main-menu', GrampsjsMainMenu)
