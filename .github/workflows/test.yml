@@ -94,7 +94,7 @@ jobs:
   ui:
     name: "${{ github.event_name == 'pull_request' && github.base_ref != 'main' && 'UI smoke (PR)' || 'UI regression (full)' }}"
     needs: checks
-    # Keep browser system dependencies on a fixed supported Ubuntu release.
+    # Use a fixed supported Ubuntu release for browser dependencies.
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
