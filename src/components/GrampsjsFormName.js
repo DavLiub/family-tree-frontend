@@ -3,6 +3,7 @@ element for editing a name
 */
 
 import {html, css, LitElement} from 'lit'
+import '@awesome.me/webawesome/dist/components/button/button.js'
 import '@material/mwc-textfield'
 import '@material/web/iconbutton/icon-button.js'
 
@@ -32,6 +33,22 @@ class GrampsjsFormName extends GrampsjsAppStateMixin(LitElement) {
           width: 100%;
         }
 
+        wa-button > grampsjs-icon {
+          pointer-events: none;
+        }
+
+        .sr-only {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          padding: 0;
+          margin: -1px;
+          overflow: hidden;
+          clip-path: inset(50%);
+          white-space: nowrap;
+          border: 0;
+        }
+
         .clear {
           clear: both;
           margin-bottom: 2.5em;
@@ -55,6 +72,7 @@ class GrampsjsFormName extends GrampsjsAppStateMixin(LitElement) {
 
   static get properties() {
     return {
+      webawesome: {type: Boolean},
       data: {type: Object},
       showMore: {type: Boolean},
       loadingTypes: {type: Boolean},
@@ -66,6 +84,7 @@ class GrampsjsFormName extends GrampsjsAppStateMixin(LitElement) {
 
   constructor() {
     super()
+    this.webawesome = false
     this.data = {_class: 'Name'}
     this.showMore = false
     this.types = {}
@@ -74,10 +93,38 @@ class GrampsjsFormName extends GrampsjsAppStateMixin(LitElement) {
     this.origintype = false
   }
 
+  _action(icon, label, handler, disabled = false, hidden = false, id = '') {
+    const content = html`<grampsjs-icon
+      path=${icon}
+      color="currentColor"
+      aria-hidden="true"
+    ></grampsjs-icon>`
+    const classes = {edit: label !== 'Add', hide: hidden}
+    return this.webawesome
+      ? html`<wa-button
+          appearance="plain"
+          size="small"
+          class=${classMap(classes)}
+          id=${id}
+          ?disabled=${disabled}
+          @click=${handler}
+          >${content}<span class="sr-only">${this._(label)}</span></wa-button
+        >`
+      : html`<md-icon-button
+          class=${classMap(classes)}
+          id=${id}
+          aria-label=${this._(label)}
+          ?disabled=${disabled}
+          @click=${handler}
+          >${content}</md-icon-button
+        >`
+  }
+
   render() {
     return html`
       <p class="${classMap({hide: !this.showMore})}">
         <grampsjs-form-string
+          ?webawesome=${this.webawesome}
           @formdata:changed="${this._handleFormData}"
           fullwidth
           id="title"
@@ -87,6 +134,7 @@ class GrampsjsFormName extends GrampsjsAppStateMixin(LitElement) {
       </p>
       <p>
         <grampsjs-form-string
+          ?webawesome=${this.webawesome}
           @formdata:changed="${this._handleFormData}"
           fullwidth
           id="first_name"
@@ -96,6 +144,7 @@ class GrampsjsFormName extends GrampsjsAppStateMixin(LitElement) {
       </p>
       <p class="${classMap({hide: !this.showMore})}">
         <grampsjs-form-string
+          ?webawesome=${this.webawesome}
           @formdata:changed="${this._handleFormData}"
           fullwidth
           id="suffix"
@@ -105,6 +154,7 @@ class GrampsjsFormName extends GrampsjsAppStateMixin(LitElement) {
       </p>
       <p class="${classMap({hide: !this.showMore})}">
         <grampsjs-form-string
+          ?webawesome=${this.webawesome}
           @formdata:changed="${this._handleFormData}"
           fullwidth
           id="call"
@@ -114,6 +164,7 @@ class GrampsjsFormName extends GrampsjsAppStateMixin(LitElement) {
       </p>
       <p class="${classMap({hide: !this.showMore})}">
         <grampsjs-form-string
+          ?webawesome=${this.webawesome}
           @formdata:changed="${this._handleFormData}"
           fullwidth
           id="nick"
@@ -123,6 +174,7 @@ class GrampsjsFormName extends GrampsjsAppStateMixin(LitElement) {
       </p>
       <p class="${classMap({hide: !this.showMore})}">
         <grampsjs-form-string
+          ?webawesome=${this.webawesome}
           @formdata:changed="${this._handleFormData}"
           fullwidth
           id="famnick"
@@ -138,39 +190,30 @@ class GrampsjsFormName extends GrampsjsAppStateMixin(LitElement) {
       </h4>
       ${(this.data.surname_list || [{}]).map(
         (obj, i) => html`
-          <md-icon-button
-            ?disabled="${!this.data?.surname_list ||
-            this.data?.surname_list?.length === 1}"
-            class="edit ${classMap({hide: !this.showMore})}"
-            aria-label="${this._('Delete')}"
-            @click="${() => this._handleDeleteSurname(i)}"
-          >
-            <grampsjs-icon path="${mdiDelete}" color="currentColor">
-            </grampsjs-icon>
-          </md-icon-button>
-
-          <md-icon-button
-            ?disabled="${!this.data?.surname_list || i === 0}"
-            class="edit ${classMap({hide: !this.showMore})}"
-            aria-label="${this._('Move Up')}"
-            @click="${() => this._handleUpSurname(i)}"
-          >
-            <grampsjs-icon path="${mdiArrowUp}" color="currentColor">
-            </grampsjs-icon>
-          </md-icon-button>
-
-          <md-icon-button
-            ?disabled="${!this.data?.surname_list ||
-            i === this.data?.surname_list?.length - 1}"
-            class="edit ${classMap({hide: !this.showMore})}"
-            aria-label="${this._('Move Down')}"
-            @click="${() => this._handleDownSurname(i)}"
-          >
-            <grampsjs-icon path="${mdiArrowDown}" color="currentColor">
-            </grampsjs-icon>
-          </md-icon-button>
+          ${this._action(
+            mdiDelete,
+            'Delete',
+            () => this._handleDeleteSurname(i),
+            !this.data?.surname_list || this.data.surname_list.length === 1,
+            !this.showMore
+          )}
+          ${this._action(
+            mdiArrowUp,
+            'Move Up',
+            () => this._handleUpSurname(i),
+            !this.data?.surname_list || i === 0,
+            !this.showMore
+          )}
+          ${this._action(
+            mdiArrowDown,
+            'Move Down',
+            () => this._handleDownSurname(i),
+            !this.data?.surname_list || i === this.data.surname_list.length - 1,
+            !this.showMore
+          )}
 
           <grampsjs-form-surname
+            ?webawesome=${this.webawesome}
             ?origintype="${this.origintype}"
             ?showMore="${this.showMore}"
             id="surnames${i}"
@@ -187,27 +230,20 @@ class GrampsjsFormName extends GrampsjsAppStateMixin(LitElement) {
         `
       )}
       <p class="${classMap({hide: !this.showMore})}">
-        <md-icon-button
-          aria-label="${this._('Add')}"
-          @click="${this._handleAddSurname}"
-        >
-          <grampsjs-icon path="${mdiPlus}" color="currentColor">
-          </grampsjs-icon>
-        </md-icon-button>
+        ${this._action(mdiPlus, 'Add', this._handleAddSurname)}
       </p>
 
       ${this.showMore
         ? ''
         : html`
-            <md-icon-button
-              class="edit"
-              id="button-show-more"
-              aria-label="${this._('Show more')}"
-              @click="${this._handleShowMore}"
-            >
-              <grampsjs-icon path="${mdiDotsHorizontal}" color="currentColor">
-              </grampsjs-icon>
-            </md-icon-button>
+            ${this._action(
+              mdiDotsHorizontal,
+              'Show more',
+              this._handleShowMore,
+              false,
+              false,
+              'button-show-more'
+            )}
             <grampsjs-tooltip
               for="button-show-more"
               .appState="${this.appState}"
@@ -239,14 +275,15 @@ class GrampsjsFormName extends GrampsjsAppStateMixin(LitElement) {
       ...this.data,
       surname_list: [...(this.data.surname_list || [{}]), {}],
     }
+    this.handleChange()
   }
 
   _handleDeleteSurname(i) {
-    this.data.surname_list.splice(i, 1)
     this.data = {
       ...this.data,
-      surname_list: [...this.data.surname_list],
+      surname_list: this.data.surname_list.filter((_, index) => index !== i),
     }
+    this.handleChange()
   }
 
   _handleUpSurname(i) {
@@ -254,6 +291,7 @@ class GrampsjsFormName extends GrampsjsAppStateMixin(LitElement) {
       ...this.data,
       surname_list: [...this.moveItem(this.data.surname_list, i, i - 1)],
     }
+    this.handleChange()
   }
 
   _handleDownSurname(i) {
@@ -261,6 +299,7 @@ class GrampsjsFormName extends GrampsjsAppStateMixin(LitElement) {
       ...this.data,
       surname_list: [...this.moveItem(this.data.surname_list, i, i + 1)],
     }
+    this.handleChange()
   }
 
   _handleFormData(e) {
@@ -288,10 +327,10 @@ class GrampsjsFormName extends GrampsjsAppStateMixin(LitElement) {
   }
 
   moveItem = (array, from, to) => {
-    const item = array[from]
-    array.splice(from, 1)
-    array.splice(to, 0, item)
-    return array
+    const result = [...array]
+    const [item] = result.splice(from, 1)
+    result.splice(to, 0, item)
+    return result
   }
 }
 

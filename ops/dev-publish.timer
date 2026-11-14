@@ -1,0 +1,11 @@
+[Unit]
+Description=Check Family Tree dev CI every two minutes
+
+[Timer]
+OnBootSec=90s
+OnUnitInactiveSec=2min
+RandomizedDelaySec=15s
+Unit=family-dev-publish.service
+
+[Install]
+WantedBy=timers.target
