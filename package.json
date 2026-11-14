@@ -11,6 +11,7 @@
     "build": "rimraf dist && rollup -c rollup.config.js",
     "start:build": "npm run build && web-dev-server --root-dir dist --app-index index.html --open --compatibility none",
     "start": "web-dev-server --app-index index.html --host 0.0.0.0 --node-resolve --open --watch --port 8001",
+    "prototype:ui": "web-dev-server --app-index prototypes/ui-kit/index.html --host 127.0.0.1 --port 4175 --node-resolve",
     "typecheck": "tsc --noEmit",
     "test:unit": "vitest run --coverage",
     "test:integration": "vitest run --config vitest.int.js",
