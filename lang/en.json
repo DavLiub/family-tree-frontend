@@ -459,5 +459,8 @@
   "Sending reset link...": "Sending reset link...",
   "Unable to sign in. Please try again.": "Unable to sign in. Please try again.",
   "Unable to send reset link. Please try again.": "Unable to send reset link. Please try again.",
-  "Username must not be empty.": "Username must not be empty."
+  "Username must not be empty.": "Username must not be empty.",
+  "Photos and documents": "Photos and documents",
+  "More": "More",
+  "Main navigation": "Main navigation"
 }
