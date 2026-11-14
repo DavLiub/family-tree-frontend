@@ -17,10 +17,21 @@ afterEach(() => {
 it('real name update keeps hidden fields and retries a failed authenticated PUT', async () => {
   const fixture = {
     ...structuredClone(person),
+    primary_name: {
+      ...structuredClone(person.primary_name),
+      type: 'Synthetic custom name type',
+      title: 'Synthetic title',
+      call: 'Synthetic call name',
+      surname_list: [
+        {surname: 'Example', prefix: 'van', connector: 'and', primary: true},
+        {surname: 'Sample', origintype: 'Synthetic custom origin'},
+      ],
+    },
     private: true,
     attribute_list: [{type: 'Synthetic attribute', value: 'must survive'}],
     note_list: ['synthetic-hidden-note'],
   }
+  const originalName = structuredClone(fixture.primary_name)
   const name = {...fixture.primary_name, first_name: 'Alexandria Revised'}
   const changes = vi.fn()
   window.addEventListener('db:changed', changes)
@@ -74,7 +85,7 @@ it('real name update keeps hidden fields and retries a failed authenticated PUT'
         expect(payload).not.toHaveProperty(field)
       }
     }
-    expect(fixture.primary_name).toEqual(person.primary_name)
+    expect(fixture.primary_name).toEqual(originalName)
   } finally {
     window.removeEventListener('db:changed', changes)
   }
