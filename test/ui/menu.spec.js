@@ -2,13 +2,23 @@ import {test, expect, noOverflow} from './site.js'
 
 async function openDrawer(page, lang = 'en') {
   const menu = page.locator('grampsjs-main-menu')
+  const drawer = page.locator('mwc-drawer#app-drawer')
+  const panel = drawer.locator('aside')
+  const moving = /mdc-drawer--(?:opening|closing|animate)/
   const people = menu.locator('a[href="/people"]')
-  if (!(await people.isVisible())) {
+  // A route change closes the modal drawer. Its links can remain visible
+  // during that transition, so visibility alone cannot decide whether to open.
+  await drawer.evaluate(el => el.updateComplete)
+  await expect(panel).not.toHaveClass(moving)
+  if (!(await drawer.evaluate(el => el.open))) {
     await page
       .locator('grampsjs-app-bar')
       .getByRole('button', {name: lang === 'ru' ? 'Меню' : 'Menu', exact: true})
       .click()
   }
+  await expect(drawer).toHaveJSProperty('open', true)
+  await drawer.evaluate(el => el.updateComplete)
+  await expect(panel).not.toHaveClass(moving)
   await expect(people).toBeVisible()
   return menu
 }
