@@ -4,6 +4,7 @@ Element for selecting a Gramps type
 
 import {html, css, LitElement} from 'lit'
 import '@material/mwc-textfield'
+import '@awesome.me/webawesome/dist/components/input/input.js'
 
 import {sharedStyles} from '../SharedStyles.js'
 import {fireEvent} from '../util.js'
@@ -23,6 +24,7 @@ class GrampsjsFormString extends GrampsjsAppStateMixin(LitElement) {
 
   static get properties() {
     return {
+      webawesome: {type: Boolean},
       value: {type: String},
       label: {type: String},
       disabled: {type: Boolean},
@@ -34,6 +36,7 @@ class GrampsjsFormString extends GrampsjsAppStateMixin(LitElement) {
 
   constructor() {
     super()
+    this.webawesome = false
     this.value = ''
     this.label = ''
     this.disabled = false
@@ -43,32 +46,41 @@ class GrampsjsFormString extends GrampsjsAppStateMixin(LitElement) {
   }
 
   render() {
-    return html`
-      <mwc-textfield
-        @input="${this.handleChange}"
-        label="${this.label}"
-        value="${this.value}"
-        type="${this.type}"
-        ?disabled="${this.disabled}"
-        ?required="${this.required}"
-        class="${this.fullwidth ? 'fullwidth' : ''}"
-      ></mwc-textfield>
-    `
+    return this.webawesome
+      ? html`<wa-input
+          @input=${this.handleChange}
+          label=${this.label}
+          .value=${this.value}
+          type=${this.type}
+          ?disabled=${this.disabled}
+          ?required=${this.required}
+        ></wa-input>`
+      : html`
+          <mwc-textfield
+            @input="${this.handleChange}"
+            label="${this.label}"
+            value="${this.value}"
+            type="${this.type}"
+            ?disabled="${this.disabled}"
+            ?required="${this.required}"
+            class="${this.fullwidth ? 'fullwidth' : ''}"
+          ></mwc-textfield>
+        `
   }
 
   reset() {
-    this.shadowRoot.querySelector('mwc-textfield').value = ''
+    this.shadowRoot.querySelector('mwc-textfield, wa-input').value = ''
   }
 
   handleChange() {
-    const el = this.shadowRoot.querySelector('mwc-textfield')
+    const el = this.shadowRoot.querySelector('mwc-textfield, wa-input')
     if (el !== null) {
       fireEvent(this, 'formdata:changed', {data: el.value})
     }
   }
 
   isValid() {
-    const el = this.shadowRoot.querySelector('mwc-textfield')
+    const el = this.shadowRoot.querySelector('mwc-textfield, wa-input')
     if (el !== null) {
       if (el?.validity?.valid) {
         return true

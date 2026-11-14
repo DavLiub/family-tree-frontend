@@ -29,6 +29,7 @@ class GrampsjsFormSurname extends GrampsjsAppStateMixin(LitElement) {
 
   static get properties() {
     return {
+      webawesome: {type: Boolean},
       data: {type: Object},
       showMore: {type: Boolean},
       idx: {type: Number},
@@ -41,6 +42,7 @@ class GrampsjsFormSurname extends GrampsjsAppStateMixin(LitElement) {
 
   constructor() {
     super()
+    this.webawesome = false
     this.data = {_class: 'Name'}
     this.showMore = false
     this.idx = 0
@@ -54,6 +56,7 @@ class GrampsjsFormSurname extends GrampsjsAppStateMixin(LitElement) {
     return html`
       <p class="${classMap({hide: !this.showMore})}">
         <grampsjs-form-string
+          ?webawesome=${this.webawesome}
           @formdata:changed="${this._handleFormData}"
           fullwidth
           id="prefix"
@@ -63,6 +66,7 @@ class GrampsjsFormSurname extends GrampsjsAppStateMixin(LitElement) {
       </p>
       <p>
         <grampsjs-form-string
+          ?webawesome=${this.webawesome}
           @formdata:changed="${this._handleFormData}"
           fullwidth
           id="surname"
@@ -72,6 +76,7 @@ class GrampsjsFormSurname extends GrampsjsAppStateMixin(LitElement) {
       </p>
       <p class="${classMap({hide: !this.showMore})}">
         <grampsjs-form-string
+          ?webawesome=${this.webawesome}
           @formdata:changed="${this._handleFormData}"
           fullwidth
           id="connector"
@@ -83,6 +88,7 @@ class GrampsjsFormSurname extends GrampsjsAppStateMixin(LitElement) {
         ? html`
             <p class="${classMap({hide: !this.showMore})}">
               <grampsjs-form-select-type
+                ?webawesome=${this.webawesome}
                 noheading
                 label="${this._('Surname origin type:').replace(':', '')}"
                 id="surname-origin-type"

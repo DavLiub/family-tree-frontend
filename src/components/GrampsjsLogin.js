@@ -1,15 +1,11 @@
-/* eslint-disable lit-a11y/click-events-have-key-events */
 import {html, css, LitElement} from 'lit'
 
-import '@material/mwc-circular-progress'
-import '@material/web/button/filled-button'
-import '@material/web/button/outlined-button'
+import '@awesome.me/webawesome/dist/components/input/input.js'
+import '@awesome.me/webawesome/dist/components/button/button.js'
+import '@awesome.me/webawesome/dist/translations/ru.js'
 
-import {mdiCheckCircle} from '@mdi/js'
-
-import './GrampsjsIcon.js'
 import './GrampsjsOidcButton.js'
-import {sharedStyles} from '../SharedStyles.js'
+import {sharedStyles, waThemeStyles} from '../SharedStyles.js'
 import {
   apiGetTokens,
   apiResetPassword,
@@ -23,162 +19,59 @@ class GrampsjsLogin extends GrampsjsAppStateMixin(LitElement) {
   static get styles() {
     return [
       sharedStyles,
+      waThemeStyles,
       css`
-        #login-container {
-          margin: auto;
-          height: 100%;
-          width: 100%;
-          max-width: 25em;
-        }
-
-        #login-form {
-          margin: auto;
-          max-width: 90vw;
-          position: relative;
-          top: 20vh;
-        }
-
-        #login-form md-filled-button {
-          width: 100%;
-          margin-bottom: 0.5em;
-        }
-
-        /* Native outlined text field */
-        .text-field-wrapper {
-          position: relative;
-          width: 100%;
-          margin-bottom: 0.7em;
-        }
-
-        .text-field-wrapper input {
-          width: 100%;
-          height: 56px;
-          padding: 20px 16px 8px;
-          border: 1px solid var(--md-sys-color-outline);
-          border-radius: 4px;
-          background: transparent;
-          color: var(--md-sys-color-on-surface);
-          font-family: var(--grampsjs-body-font-family);
-          font-size: 16px;
-          font-weight: 400;
-          box-sizing: border-box;
-          outline: none;
-          transition: border-color 0.15s ease;
-          caret-color: var(--md-sys-color-primary);
-        }
-
-        .text-field-wrapper input:hover:not(:focus) {
-          border-color: var(--md-sys-color-on-surface);
-        }
-
-        .text-field-wrapper input:focus {
-          border: 2px solid var(--md-sys-color-primary);
-          /* keep text position stable when border widens */
-          padding: 19px 15px 7px;
-        }
-
-        .text-field-wrapper label {
-          /* override sharedStyles label rules */
+        :host {
           display: block;
-          position: absolute;
-          left: 12px;
-          top: 50%;
-          transform: translateY(-50%);
-          color: var(--md-sys-color-on-surface-variant);
-          font-size: 16px;
-          font-weight: 400;
-          line-height: 1;
-          padding: 0 4px;
-          pointer-events: none;
-          background: transparent;
-          transition: top 0.15s ease, font-size 0.15s ease, color 0.15s ease;
-          gap: 0;
-          place-items: initial;
+          min-width: 0;
         }
 
-        /* Float label when focused or filled */
-        .text-field-wrapper input:focus ~ label,
-        .text-field-wrapper input:not(:placeholder-shown) ~ label {
-          top: 0;
-          font-size: 12px;
-          background: var(--md-sys-color-background);
+        #login-container {
+          box-sizing: border-box;
+          width: 100%;
+          max-width: 28rem;
+          margin: clamp(1rem, 10vh, 6rem) auto 2rem;
+          padding: 0 1rem;
         }
 
-        .text-field-wrapper input:focus ~ label {
-          color: var(--md-sys-color-primary);
+        form {
+          min-width: 0;
         }
 
-        .button-container {
+        h2 {
+          overflow-wrap: anywhere;
+        }
+
+        wa-input,
+        .primary-action {
+          display: block;
+          width: 100%;
+          margin-block: 1rem;
+        }
+
+        .secondary-actions {
           display: flex;
-          gap: 0.5em;
-          margin-top: 1em;
-          margin-bottom: 0.5em;
-          --button-height: 48px;
+          flex-direction: column;
+          align-items: stretch;
+          gap: 0.5rem;
         }
 
-        .button-container md-outlined-button,
-        .button-container md-filled-button {
-          flex: 1;
-          height: var(--button-height);
+        wa-button::part(label) {
+          white-space: normal;
+          overflow-wrap: anywhere;
         }
 
-        .button-container md-outlined-button {
-          --md-outlined-button-container-height: var(--button-height);
-          --md-outlined-button-leading-space: 8px;
-          --md-outlined-button-trailing-space: 8px;
-          --md-outlined-button-top-space: 0px;
-          --md-outlined-button-bottom-space: 0px;
-          min-height: var(--button-height);
-          max-height: var(--button-height);
+        [role='alert'] {
+          color: var(--md-sys-color-error);
+          overflow-wrap: anywhere;
         }
 
-        .button-container md-outlined-button::part(outline) {
-          height: var(--button-height);
-        }
-
-        .button-container md-filled-button {
-          --md-filled-button-container-height: var(--button-height);
-          --md-filled-button-leading-space: 8px;
-          --md-filled-button-trailing-space: 8px;
-          --md-filled-button-top-space: 0px;
-          --md-filled-button-bottom-space: 0px;
-          min-height: var(--button-height);
-          max-height: var(--button-height);
-        }
-
-        .button-container md-filled-button::part(container) {
-          height: var(--button-height);
-        }
-
-        p.reset-link {
-          padding-top: 1em;
-          font-size: 0.9em;
-        }
-
-        p.forgot-password {
-          text-align: center;
-          font-size: 0.85em;
-          margin-top: 0.75em;
-          margin-bottom: 1.5em;
-        }
-
-        p.success {
-          padding-top: 1em;
+        .success {
           color: var(--grampsjs-alert-success-font-color);
-          font-size: 1.2em;
-          font-weight: 400;
-          --mdc-icon-size: 1.6em;
-          line-height: 1.4em;
-          text-align: center;
-        }
-
-        mwc-circular-progress {
-          --mdc-theme-primary: var(--mdc-theme-on-primary);
         }
 
         hr {
-          margin-top: 2em;
-          margin-bottom: 2em;
+          margin-block: 1.5rem;
         }
       `,
     ]
@@ -187,283 +80,325 @@ class GrampsjsLogin extends GrampsjsAppStateMixin(LitElement) {
   static get properties() {
     return {
       resetpw: {type: Boolean},
-      isFormValid: {type: Boolean},
       credentials: {type: Object},
       tree: {type: String},
       oidcConfig: {type: Object},
+      pending: {state: true},
+      loadingConfig: {state: true},
+      errorMessage: {state: true},
+      resetSuccess: {state: true},
     }
   }
 
   constructor() {
     super()
     this.resetpw = false
-    this.isFormValid = false
     this.credentials = {}
     this.tree = ''
     this.oidcConfig = {}
+    this.pending = false
+    this.loadingConfig = true
+    this.errorMessage = ''
+    this.resetSuccess = false
   }
 
   async connectedCallback() {
     super.connectedCallback()
-    const config = await apiGetOIDCConfig()
-    if (!config.error) {
+    try {
+      const config = await apiGetOIDCConfig()
+      if (!this.isConnected) return
+      if (config.error) {
+        this._showError(config.error)
+        return
+      }
       this.oidcConfig = config
-
       if (
         config.enabled &&
         config.disable_local_auth &&
         config.auto_redirect &&
-        config.providers &&
-        config.providers.length === 1
+        config.providers?.length === 1
       ) {
-        requestAnimationFrame(() =>
-          this._submitOIDCLogin(config.providers[0].id)
-        )
+        requestAnimationFrame(() => {
+          if (this.isConnected) this._submitOIDCLogin(config.providers[0].id)
+        })
       }
+    } catch (error) {
+      this._showError(error?.message || 'Unable to sign in. Please try again.')
+    } finally {
+      this.loadingConfig = false
     }
+  }
+
+  get localAuthDisabled() {
+    return this.oidcConfig?.enabled && this.oidcConfig?.disable_local_auth
+  }
+
+  get busy() {
+    return this.pending || this.loadingConfig
   }
 
   render() {
-    if (this.resetpw) {
-      return this._renderResetPw()
-    }
-    return this._renderLogin()
+    return html`<div
+      id="login-container"
+      lang=${this.appState?.i18n?.lang || this.appState?.settings?.lang || 'en'}
+    >
+      ${this.resetpw ? this._renderResetPw() : this._renderLogin()}
+      <p role="status" aria-live="polite">
+        ${this.loadingConfig
+          ? this._('Loading items...')
+          : this.pending
+          ? this._(this.resetpw ? 'Sending reset link...' : 'Signing in...')
+          : ''}
+      </p>
+      ${this.errorMessage
+        ? html`<p role="alert">${this._(this.errorMessage)}</p>`
+        : ''}
+    </div>`
   }
 
   _renderLogin() {
-    const localAuthDisabled =
-      this.oidcConfig?.enabled && this.oidcConfig?.disable_local_auth
+    return html`<form
+      id="login-form"
+      aria-busy=${this.busy}
+      @submit=${this._submitLogin}
+      @keydown=${this._handleFormKeydown}
+    >
+      <h2>${this._('Log in to Gramps Web')}</h2>
+      ${this.localAuthDisabled
+        ? ''
+        : html`
+            ${this._renderUsername()}
+            <wa-input
+              id="password"
+              name="password"
+              label=${this._('Password')}
+              type="password"
+              autocomplete="current-password"
+              password-toggle
+              required
+              .value=${this.credentials.password || ''}
+              ?disabled=${this.busy}
+              @input=${this._credChanged}
+              @change=${this._credChanged}
+            ></wa-input>
+            <wa-button
+              class="primary-action"
+              variant="brand"
+              type="submit"
+              ?disabled=${this.busy}
+              ?loading=${this.pending}
+              >${this._('Log in')}</wa-button
+            >
+            <div class="secondary-actions">
+              <wa-button
+                appearance="plain"
+                ?disabled=${this.busy}
+                @click=${() => this._setResetPw(true)}
+                >${this._('Lost password?')}</wa-button
+              >
+              ${window.grampsjsConfig.hideRegisterLink
+                ? ''
+                : html`<wa-button
+                    appearance="outlined"
+                    ?disabled=${this.busy}
+                    @click=${() => this._handleNav('register')}
+                    >${this._('Register new account')}</wa-button
+                  >`}
+            </div>
+          `}
+      ${this.oidcConfig?.enabled && this.oidcConfig?.providers?.length
+        ? html`
+            ${this.localAuthDisabled ? '' : html`<hr />`}
+            ${this.oidcConfig.providers.map(
+              provider => html`<grampsjs-oidc-button
+                .provider=${provider.id}
+                .providerName=${provider.name}
+                .onClick=${() => this._submitOIDCLogin(provider.id)}
+                .disabled=${this.busy}
+                .loading=${this.pending}
+                .buttonText=${this._getOIDCButtonText(
+                  provider.id,
+                  provider.name
+                )}
+                .signingInText=${this._('Signing in...')}
+              ></grampsjs-oidc-button>`
+            )}
+          `
+        : ''}
+    </form>`
+  }
 
-    return html`
-      <div id="login-container">
-        <form
-          id="login-form"
-          @submit="${this._submitLogin}"
-          @keydown="${this._handleFormKeydown}"
-        >
-          <h2>${this._('Log in to Gramps Web')}</h2>
-          ${localAuthDisabled
-            ? ''
-            : html`
-                <div class="text-field-wrapper">
-                  <input
-                    id="username"
-                    name="username"
-                    type="text"
-                    autocomplete="username"
-                    autocapitalize="off"
-                    placeholder=" "
-                    required
-                    .value="${this.credentials.username || ''}"
-                    @input="${this._credChanged}"
-                    @change="${this._credChanged}"
-                  />
-                  <label for="username">${this._('Username')}</label>
-                </div>
-                <div class="text-field-wrapper">
-                  <input
-                    id="password"
-                    name="password"
-                    type="password"
-                    autocomplete="current-password"
-                    placeholder=" "
-                    required
-                    .value="${this.credentials.password || ''}"
-                    @input="${this._credChanged}"
-                    @change="${this._credChanged}"
-                  />
-                  <label for="password">${this._('Password')}</label>
-                </div>
-                <div class="button-container">
-                  ${window.grampsjsConfig.hideRegisterLink
-                    ? ''
-                    : html`
-                        <md-outlined-button
-                          @click="${() => this._handleNav('register')}"
-                        >
-                          ${this._('Register new account')}
-                        </md-outlined-button>
-                      `}
-                  <md-filled-button type="submit">
-                    ${this._('login')}
-                  </md-filled-button>
-                </div>
-                <mwc-circular-progress
-                  indeterminate
-                  density="-7"
-                  closed
-                  id="login-progress"
-                  style="display:none; margin-top: 0.5em;"
-                >
-                </mwc-circular-progress>
-                <p class="forgot-password">
-                  <span
-                    class="link"
-                    @click="${() => {
-                      this.resetpw = true
-                    }}"
-                    >${this._('Lost password?')}</span
-                  >
-                </p>
-              `}
-          ${this.oidcConfig?.enabled &&
-          this.oidcConfig?.providers &&
-          !localAuthDisabled
-            ? html`<hr />`
-            : ''}
-          ${this.oidcConfig?.enabled && this.oidcConfig?.providers
-            ? this.oidcConfig.providers.map(
-                provider => html`
-                  <grampsjs-oidc-button
-                    .provider="${provider.id}"
-                    .providerName="${provider.name}"
-                    .onClick="${() => this._submitOIDCLogin(provider.id)}"
-                    .buttonText="${this._getOIDCButtonText(
-                      provider.id,
-                      provider.name
-                    )}"
-                    .signingInText="${this._('Signing in...')}"
-                  ></grampsjs-oidc-button>
-                `
-              )
-            : ''}
-        </form>
-      </div>
-    `
+  _renderUsername() {
+    return html`<wa-input
+      id="username"
+      name="username"
+      label=${this._('Username')}
+      type="text"
+      autocomplete="username"
+      autocapitalize="off"
+      spellcheck="false"
+      required
+      .value=${this.credentials.username || ''}
+      ?disabled=${this.busy}
+      @input=${this._credChanged}
+      @change=${this._credChanged}
+    ></wa-input>`
+  }
+
+  _renderResetPw() {
+    return html`<form
+      id="login-form"
+      aria-busy=${this.busy}
+      @submit=${this._resetPw}
+      @keydown=${this._handleFormKeydown}
+    >
+      <h2>${this._('reset password')}</h2>
+      ${this.resetSuccess
+        ? html`<p class="success" role="status" tabindex="-1">
+            ${this._('A password reset link has been sent by e-mail.')}
+          </p>`
+        : html`
+            ${this._renderUsername()}
+            <wa-button
+              class="primary-action"
+              variant="brand"
+              type="submit"
+              ?disabled=${this.busy}
+              ?loading=${this.pending}
+              >${this._('reset password')}</wa-button
+            >
+          `}
+      <wa-button
+        appearance="plain"
+        ?disabled=${this.busy}
+        @click=${() => this._setResetPw(false)}
+        >${this._('_Back')}</wa-button
+      >
+    </form>`
+  }
+
+  _setResetPw(resetpw) {
+    if (this.busy || this.localAuthDisabled) return
+    this.resetpw = resetpw
+    this.errorMessage = ''
+    this.resetSuccess = false
+    this.updateComplete.then(() =>
+      this.shadowRoot.querySelector('#username')?.focus()
+    )
   }
 
   _handleNav(path) {
-    fireEvent(this, 'nav', {path})
+    if (!this.busy) fireEvent(this, 'nav', {path})
   }
 
   _getOIDCButtonText(providerId, providerName) {
-    return `${this._('Continue with %s', providerName)}`
+    return this._('Continue with %s', providerName)
   }
 
   _credChanged(e) {
     this.credentials = {...this.credentials, [e.target.id]: e.target.value}
   }
 
-  // md-filled-button[type="submit"] is not recognized by browsers as the
-  // form's default submit button, so pressing Enter in an input does not
-  // implicitly submit. Bridge it to a real submit event.
+  // WA also schedules Enter submission; cancelling its event keeps one submit.
   // eslint-disable-next-line class-methods-use-this
   _handleFormKeydown(event) {
-    if (event.key === 'Enter' && event.target.tagName === 'INPUT') {
+    if (
+      event.key === 'Enter' &&
+      !event.isComposing &&
+      !event.ctrlKey &&
+      !event.metaKey &&
+      !event.altKey &&
+      !event.shiftKey &&
+      event.composedPath()[0]?.tagName === 'INPUT'
+    ) {
       event.preventDefault()
       event.currentTarget.requestSubmit()
     }
   }
 
-  _renderResetPw() {
-    return html`
-      <div id="login-container">
-        <form
-          id="login-form"
-          @submit="${this._resetPw}"
-          @keydown="${this._handleFormKeydown}"
-        >
-          <h2>${this._('reset password')}</h2>
-          <div id="inner-form">
-            <div class="text-field-wrapper">
-              <input
-                id="username"
-                name="username"
-                type="text"
-                autocomplete="username"
-                autocapitalize="off"
-                placeholder=" "
-              />
-              <label for="username">${this._('Username')}</label>
-            </div>
-            <md-filled-button type="submit" style="width: 100%;">
-              ${this._('reset password')}
-            </md-filled-button>
-          </div>
-          <p class="success" id="reset-success" style="display:none;">
-            <grampsjs-icon
-              path="${mdiCheckCircle}"
-              color="currentColor"
-            ></grampsjs-icon
-            ><br />
-            ${this._('A password reset link has been sent by e-mail.')}
-          </p>
-          <p class="reset-link">
-            <span
-              class="link"
-              @click="${() => {
-                this.resetpw = false
-              }}"
-              >${this._('_Back')}</span
-            >
-          </p>
-        </form>
-      </div>
-    `
+  _readField(id) {
+    const field = this.shadowRoot.getElementById(id)
+    return field?.input?.value ?? field?.value ?? ''
   }
 
   async _submitLogin(e) {
-    // Prevent the native form submit/navigation
     e?.preventDefault()
     e?.stopPropagation()
-
-    // Read directly from the DOM rather than this.credentials: autofill
-    // doesn't always fire input/change events, which could otherwise leave
-    // stale (empty) values in reactive state.
-    const username = this.shadowRoot.getElementById('username')?.value
-    const password = this.shadowRoot.getElementById('password')?.value
-
-    if (!username || !password) {
-      return
-    }
-
-    const submitProgress = this.shadowRoot.getElementById('login-progress')
-    submitProgress.style.display = 'block'
-    submitProgress.closed = false
-    apiGetTokens(username, password).then(res => {
-      if ('error' in res) {
-        submitProgress.style.display = 'none'
-        submitProgress.closed = true
-        this._showError(res.error)
-      } else {
+    if (this.busy || this.localAuthDisabled || this.resetpw) return
+    const username = this._readField('username')
+    const password = this._readField('password')
+    if (!username || !password) return
+    this.credentials = {...this.credentials, username, password}
+    this.pending = true
+    this.errorMessage = ''
+    let navigating = false
+    try {
+      const res = await apiGetTokens(username, password)
+      if (res.error) this._showError(res.error)
+      else {
         document.location.href = '/'
+        navigating = true
       }
-    })
+    } catch (error) {
+      this._showError(error?.message || 'Unable to sign in. Please try again.')
+    } finally {
+      if (!navigating) this.pending = false
+    }
   }
 
   async _submitOIDCLogin(providerId) {
+    if (this.busy) return
     if (!providerId) {
       this._showError('No OIDC provider specified')
       return
     }
-    const res = await apiOIDCLogin(providerId)
-    if ('error' in res) {
-      this._showError(res.error)
+    this.pending = true
+    this.errorMessage = ''
+    let navigating = false
+    try {
+      const res = await apiOIDCLogin(providerId)
+      if (res.error) this._showError(res.error)
+      else navigating = true
+    } catch (error) {
+      this._showError(error?.message || 'Unable to sign in. Please try again.')
+    } finally {
+      if (!navigating) this.pending = false
     }
   }
 
   async _resetPw(e) {
     e?.preventDefault()
     e?.stopPropagation()
-
-    const userField = this.shadowRoot.getElementById('username')
-    if (userField.value === '') {
+    if (
+      this.busy ||
+      this.localAuthDisabled ||
+      !this.resetpw ||
+      this.resetSuccess
+    )
+      return
+    const username = this._readField('username')
+    if (!username) {
       this._showError('Username must not be empty.')
       return
     }
-    const res = await apiResetPassword(userField.value)
-    const innerForm = this.shadowRoot.getElementById('inner-form')
-    const divSuccess = this.shadowRoot.getElementById('reset-success')
-    if ('error' in res) {
-      this._showError(res.error)
-    } else {
-      divSuccess.style.display = 'block'
-      innerForm.style.display = 'none'
+    this.credentials = {...this.credentials, username}
+    this.pending = true
+    this.errorMessage = ''
+    try {
+      const res = await apiResetPassword(username)
+      if (res.error) this._showError(res.error)
+      else this.resetSuccess = true
+    } catch (error) {
+      this._showError(
+        error?.message || 'Unable to send reset link. Please try again.'
+      )
+    } finally {
+      this.pending = false
     }
   }
 
   _showError(message) {
-    fireEvent(this, 'grampsjs:error', {message})
+    this.errorMessage = message
   }
 }
 
