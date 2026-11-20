@@ -118,6 +118,29 @@ export class GrampsjsTable extends GrampsjsAppStateMixin(LitElement) {
           content: none;
         }
 
+        td.multiline > .cell-content {
+          display: block;
+          overflow: visible;
+          overflow-wrap: anywhere;
+        }
+
+        td.multiline {
+          color: var(--md-sys-color-on-surface);
+        }
+
+        .cell-primary {
+          display: block;
+          font-size: 1.05rem;
+          font-weight: 600;
+        }
+
+        .cell-secondary {
+          display: block;
+          margin-top: 0.25rem;
+          color: var(--grampsjs-body-font-color-60);
+          font-size: 0.8rem;
+        }
+
         th {
           --md-icon-button-icon-size: 18px;
           --md-icon-button-container-height: 20px;
@@ -323,6 +346,9 @@ export class GrampsjsTable extends GrampsjsAppStateMixin(LitElement) {
                   ${item.map(
                     (value, colIndex) => html`
                       <td
+                        class=${this.columns[colIndex].multiline
+                          ? 'multiline'
+                          : ''}
                         data-label="${this._colLabel(
                           this.columns[colIndex].name
                         )}"
@@ -360,7 +386,11 @@ export class GrampsjsTable extends GrampsjsAppStateMixin(LitElement) {
       : !this.descending
     return html`
       <div class="mobile-sort">
-        <md-icon-button @click="${this._toggleSortMenu}" id="btn-sort-menu">
+        <md-icon-button
+          @click="${this._toggleSortMenu}"
+          id="btn-sort-menu"
+          aria-label=${this._('Sort')}
+        >
           <md-icon>${this._renderSortIcon(hasActive, isAscending)}</md-icon>
         </md-icon-button>
         <md-menu id="sort-menu" anchor="btn-sort-menu">
@@ -420,6 +450,7 @@ export class GrampsjsTable extends GrampsjsAppStateMixin(LitElement) {
         <md-icon-button
           @click="${() => this._toggleSort(columnIndex)}"
           id="btn-sort-${columnIndex}"
+          aria-label=${`${this._('Sort')}: ${this._colLabel(col.name)}`}
         >
           <md-icon>${this._renderSortIcon(isCurrent, isAscending)}</md-icon>
         </md-icon-button>

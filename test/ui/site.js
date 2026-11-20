@@ -1,5 +1,6 @@
 import {test as base, expect} from '@playwright/test'
 import {person, token} from '../fixtures/family.js'
+import {people as peopleRecords} from '../fixtures/people.js'
 
 const origin = 'http://127.0.0.1:4173'
 const pages = new Set(['/', '/login', '/people', '/person/TEST-I0001', '/tree'])
@@ -54,6 +55,7 @@ export const test = base.extend({
     let record = structuredClone(person)
     let nameSave
     let login
+    let people
     let signedIn = false
     const recordError = owner => error =>
       errors.push({
@@ -213,7 +215,32 @@ export const test = base.extend({
       } else if (signedIn && method === 'GET') {
         if (url.pathname === '/api/trees/-/config') return reply({})
         if (url.pathname === '/api/tasks/') return reply([])
-        if (url.pathname === '/api/people/') return reply([record])
+        if (url.pathname === '/api/people/') {
+          if (people && !url.searchParams.has('gramps_id')) {
+            expect(url.searchParams.get('profile')).toBe('self')
+            expect(url.searchParams.get('keys')).toBe(
+              'gramps_id,profile,change,handle'
+            )
+            const params = Object.fromEntries(url.searchParams)
+            people.requests.push(params)
+            if (people.mode === 'error')
+              return reply({message: 'Synthetic people load failure'}, 500)
+            const rows = people.mode === 'empty' ? [] : people.records
+            const pageNumber = Number(params.page)
+            const pageSize = Number(params.pagesize)
+            expect(pageNumber).toBeGreaterThan(0)
+            expect(pageSize).toBeGreaterThan(0)
+            return route.fulfill({
+              status: 200,
+              contentType: 'application/json',
+              headers: {'X-Total-Count': String(rows.length)},
+              body: JSON.stringify(
+                rows.slice((pageNumber - 1) * pageSize, pageNumber * pageSize)
+              ),
+            })
+          }
+          return reply([record])
+        }
         if (
           nameSave &&
           url.pathname === '/api/types/' &&
@@ -270,6 +297,14 @@ export const test = base.extend({
       return route.abort('blockedbyclient')
     })
     const site = {
+      people(mode = 'ready') {
+        people = {
+          mode,
+          requests: [],
+          records: structuredClone(peopleRecords),
+        }
+        return people
+      },
       login(oidcConfig) {
         login = {
           attempts: [],

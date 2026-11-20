@@ -462,5 +462,15 @@
   "Username must not be empty.": "Username must not be empty.",
   "Photos and documents": "Photos and documents",
   "More": "More",
-  "Main navigation": "Main navigation"
+  "Main navigation": "Main navigation",
+  "Loading people...": "Loading people...",
+  "No people found": "No people found",
+  "Try changing or clearing the filters.": "Try changing or clearing the filters.",
+  "Unable to load people": "Unable to load people",
+  "Name not recorded": "Name not recorded",
+  "Not recorded": "Not recorded",
+  "Name": "Name",
+  "Gramps ID": "Gramps ID",
+  "Birth Date": "Birth Date",
+  "Death Date": "Death Date"
 }

@@ -463,5 +463,15 @@
     "Username must not be empty.": "Введите имя пользователя.",
     "Photos and documents": "Фото и документы",
     "More": "Дополнительно",
-    "Main navigation": "Основная навигация"
+    "Main navigation": "Основная навигация",
+    "Name": "Имя",
+    "Gramps ID": "Gramps ID",
+    "Birth Date": "Дата рождения",
+    "Death Date": "Дата смерти",
+    "Loading people...": "Загрузка списка людей...",
+    "No people found": "Люди не найдены",
+    "Try changing or clearing the filters.": "Попробуйте изменить или сбросить фильтры.",
+    "Unable to load people": "Не удалось загрузить список людей",
+    "Name not recorded": "Имя не указано",
+    "Not recorded": "Нет сведений"
 }
