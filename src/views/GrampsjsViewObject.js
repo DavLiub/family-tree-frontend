@@ -138,6 +138,9 @@ export class GrampsjsViewObject extends GrampsjsView {
     this._boundToggleEditMode = this._toggleEditMode.bind(this)
     // Reuse one function reference so disconnectedCallback can release it.
     this._boundHandleEditAction = this.handleEditAction.bind(this)
+    this._boundContextSaved = () => {
+      if (this.active) this._updateData(false)
+    }
   }
 
   get canEdit() {
@@ -222,11 +225,13 @@ export class GrampsjsViewObject extends GrampsjsView {
     window.addEventListener('edit-mode:delete', this._boundDeleteSelf)
     window.addEventListener('edit-mode:toggle', this._boundToggleEditMode)
     this.addEventListener('edit:action', this._boundHandleEditAction)
+    this.addEventListener('context:saved', this._boundContextSaved)
   }
 
   disconnectedCallback() {
     this._invalidateRequest()
     this.removeEventListener('edit:action', this._boundHandleEditAction)
+    this.removeEventListener('context:saved', this._boundContextSaved)
     window.removeEventListener('edit-mode:off', this._boundDisableEditMode)
     window.removeEventListener('edit-mode:delete', this._boundDeleteSelf)
     window.removeEventListener('edit-mode:toggle', this._boundToggleEditMode)
@@ -354,23 +359,71 @@ export class GrampsjsViewObject extends GrampsjsView {
     }
   }
 
-  handleEditAction(e) {
-    if (e.detail.action === 'delEvent') {
-      this.delObjectByIndex(
+  async handleEditAction(e) {
+    // An embedded context editor owns its write and does not bubble this event.
+    if (!this.canEdit) {
+      e.detail.complete?.({error: 'Editing is not allowed'})
+      return
+    }
+    try {
+      const result = await this._performEditAction(e)
+      e.detail.complete?.(result)
+      return result
+    } catch (error) {
+      const result = {error: error.message || 'Unable to save record'}
+      e.detail.complete?.(result)
+      fireEvent(this, 'grampsjs:error', {message: result.error})
+      return result
+    }
+  }
+
+  _performEditAction(e) {
+    if (e.detail.action === 'makePrimaryName') {
+      const index = e.detail.index
+      return this._updateObject(this._data, 'person', obj => {
+        if (
+          !Number.isInteger(index) ||
+          index < 1 ||
+          index > obj.alternate_names.length
+        ) {
+          throw new Error('Record not found')
+        }
+        const names = [obj.primary_name, ...obj.alternate_names]
+        obj.primary_name = names.splice(index, 1)[0]
+        obj.alternate_names = names
+        return obj
+      })
+    } else if (e.detail.action === 'makePrimaryMedia') {
+      const index = e.detail.index
+      return this._updateObject(this._data, this._className, obj => {
+        if (
+          !Number.isInteger(index) ||
+          index < 0 ||
+          index >= obj.media_list.length
+        ) {
+          throw new Error('Record not found')
+        }
+        obj.media_list = [...obj.media_list]
+        const [photo] = obj.media_list.splice(index, 1)
+        obj.media_list.unshift(photo)
+        return obj
+      })
+    } else if (e.detail.action === 'delEvent') {
+      return this.delObjectByIndex(
         e.detail.index,
         this._data,
         this._className,
         'event_ref_list'
       )
     } else if (e.detail.action === 'addEventRef') {
-      this.addObject(
+      return this.addObject(
         e.detail.data,
         this._data,
         this._className,
         'event_ref_list'
       )
     } else if (e.detail.action === 'updateEventRef') {
-      this.updateObjectByIndex(
+      return this.updateObjectByIndex(
         e.detail.index,
         e.detail.data,
         this._data,
@@ -378,14 +431,14 @@ export class GrampsjsViewObject extends GrampsjsView {
         'event_ref_list'
       )
     } else if (e.detail.action === 'addPlaceRef') {
-      this.addObject(
+      return this.addObject(
         e.detail.data,
         this._data,
         this._className,
         'placeref_list'
       )
     } else if (e.detail.action === 'updatePlaceRef') {
-      this.updateObjectByIndex(
+      return this.updateObjectByIndex(
         e.detail.index,
         e.detail.data,
         this._data,
@@ -393,14 +446,14 @@ export class GrampsjsViewObject extends GrampsjsView {
         'placeref_list'
       )
     } else if (e.detail.action === 'addChildRef') {
-      this.addObject(
+      return this.addObject(
         e.detail.data,
         this._data,
         this._className,
         'child_ref_list'
       )
     } else if (e.detail.action === 'updateChildRef') {
-      this.updateObjectByIndex(
+      return this.updateObjectByIndex(
         e.detail.index,
         e.detail.data,
         this._data,
@@ -408,14 +461,14 @@ export class GrampsjsViewObject extends GrampsjsView {
         'child_ref_list'
       )
     } else if (e.detail.action === 'addNoteRef') {
-      this.addHandle(
+      return this.addHandle(
         e.detail.data.data[0],
         this._data,
         this._className,
         'note_list'
       )
     } else if (e.detail.action === 'newCitation') {
-      this._postObject(e.detail.data, 'citation').then(data => {
+      return this._postObject(e.detail.data, 'citation').then(data => {
         if ('data' in data) {
           this.addHandle(
             e.detail.data.handle,
@@ -426,7 +479,7 @@ export class GrampsjsViewObject extends GrampsjsView {
         }
       })
     } else if (e.detail.action === 'newNote') {
-      this._postObject(e.detail.data, 'note').then(data => {
+      return this._postObject(e.detail.data, 'note').then(data => {
         if ('data' in data) {
           this.addHandle(
             e.detail.data.handle,
@@ -439,7 +492,7 @@ export class GrampsjsViewObject extends GrampsjsView {
     } else if (e.detail.action === 'newParent') {
       const {processedData, parent} = e.detail.data
       const {handle} = processedData.filter(obj => obj._class === 'Person')[0]
-      this._postObject(processedData, 'object').then(data => {
+      return this._postObject(processedData, 'object').then(data => {
         if ('data' in data) {
           const updatedFamily = {[`${parent}_handle`]: handle}
           this.updateProp(this._data, this._className, updatedFamily)
@@ -448,7 +501,7 @@ export class GrampsjsViewObject extends GrampsjsView {
     } else if (e.detail.action === 'newChild') {
       const {processedData, frel, mrel} = e.detail.data
       const {handle} = processedData.filter(obj => obj._class === 'Person')[0]
-      this._postObject(processedData, 'object').then(data => {
+      return this._postObject(processedData, 'object').then(data => {
         if ('data' in data) {
           const childRefData = {
             ref: handle,
@@ -465,7 +518,7 @@ export class GrampsjsViewObject extends GrampsjsView {
       })
     } else if (e.detail.action === 'newEvent') {
       const {role, ...eventData} = e.detail.data
-      this._postObject(eventData, 'event').then(data => {
+      return this._postObject(eventData, 'event').then(data => {
         if ('data' in data) {
           const eventRefData = {
             _class: 'EventRef',
@@ -481,41 +534,51 @@ export class GrampsjsViewObject extends GrampsjsView {
         }
       })
     } else if (e.detail.action === 'addCitation') {
-      this.addHandle(
+      return this.addHandle(
         e.detail.data.data[0],
         this._data,
         this._className,
         'citation_list'
       )
     } else if (e.detail.action === 'addAttribute') {
-      this.addObject(
+      return this.addObject(
         e.detail.data,
         this._data,
         this._className,
         'attribute_list'
       )
     } else if (e.detail.action === 'addURL') {
-      this.addObject(e.detail.data, this._data, this._className, 'urls')
+      return this.addObject(e.detail.data, this._data, this._className, 'urls')
     } else if (e.detail.action === 'addAddress') {
-      this.addObject(e.detail.data, this._data, this._className, 'address_list')
+      return this.addObject(
+        e.detail.data,
+        this._data,
+        this._className,
+        'address_list'
+      )
     } else if (e.detail.action === 'addAssociation') {
-      this.addObject(
+      return this.addObject(
         e.detail.data,
         this._data,
         this._className,
         'person_ref_list'
       )
     } else if (e.detail.action === 'delRepository') {
-      this.delObjectByIndex(
+      return this.delObjectByIndex(
         e.detail.handle,
         this._data,
         this._className,
         'reporef_list'
       )
     } else if (e.detail.action === 'addRepoRef') {
-      this.addObject(e.detail.data, this._data, this._className, 'reporef_list')
+      return this.addObject(
+        e.detail.data,
+        this._data,
+        this._className,
+        'reporef_list'
+      )
     } else if (e.detail.action === 'updateRepoRef') {
-      this.updateObjectByIndex(
+      return this.updateObjectByIndex(
         e.detail.index,
         e.detail.data,
         this._data,
@@ -523,7 +586,7 @@ export class GrampsjsViewObject extends GrampsjsView {
         'reporef_list'
       )
     } else if (e.detail.action === 'upRepository') {
-      this.moveObjectByIndex(
+      return this.moveObjectByIndex(
         e.detail.handle,
         this._data,
         this._className,
@@ -531,7 +594,7 @@ export class GrampsjsViewObject extends GrampsjsView {
         'up'
       )
     } else if (e.detail.action === 'downRepository') {
-      this.moveObjectByIndex(
+      return this.moveObjectByIndex(
         e.detail.handle,
         this._data,
         this._className,
@@ -539,9 +602,14 @@ export class GrampsjsViewObject extends GrampsjsView {
         'down'
       )
     } else if (e.detail.action === 'addMediaRef') {
-      this.addObject(e.detail.data, this._data, this._className, 'media_list')
+      return this.addObject(
+        e.detail.data,
+        this._data,
+        this._className,
+        'media_list'
+      )
     } else if (e.detail.action === 'updateMediaRef') {
-      this.updateObjectByIndex(
+      return this.updateObjectByIndex(
         e.detail.index,
         e.detail.data,
         this._data,
@@ -549,7 +617,7 @@ export class GrampsjsViewObject extends GrampsjsView {
         'media_list'
       )
     } else if (e.detail.action === 'updateAttribute') {
-      this.updateObjectByIndex(
+      return this.updateObjectByIndex(
         e.detail.index,
         e.detail.data,
         this._data,
@@ -557,7 +625,7 @@ export class GrampsjsViewObject extends GrampsjsView {
         'attribute_list'
       )
     } else if (e.detail.action === 'updateURL') {
-      this.updateObjectByIndex(
+      return this.updateObjectByIndex(
         e.detail.index,
         e.detail.data,
         this._data,
@@ -565,7 +633,7 @@ export class GrampsjsViewObject extends GrampsjsView {
         'urls'
       )
     } else if (e.detail.action === 'updateAddress') {
-      this.updateObjectByIndex(
+      return this.updateObjectByIndex(
         e.detail.index,
         e.detail.data,
         this._data,
@@ -573,7 +641,7 @@ export class GrampsjsViewObject extends GrampsjsView {
         'address_list'
       )
     } else if (e.detail.action === 'updateAssociation') {
-      this.updateObjectByIndex(
+      return this.updateObjectByIndex(
         e.detail.index,
         e.detail.data,
         this._data,
@@ -581,46 +649,56 @@ export class GrampsjsViewObject extends GrampsjsView {
         'person_ref_list'
       )
     } else if (e.detail.action === 'delNoteRef') {
-      this.delHandle(e.detail.handle, this._data, this._className, 'note_list')
+      return this.delHandle(
+        e.detail.handle,
+        this._data,
+        this._className,
+        'note_list'
+      )
     } else if (e.detail.action === 'delMediaRef') {
-      this.delObjectByIndex(
+      return this.delObjectByIndex(
         e.detail.index,
         this._data,
         this._className,
         'media_list'
       )
     } else if (e.detail.action === 'delPlace') {
-      this.delObjectByIndex(
+      return this.delObjectByIndex(
         e.detail.index,
         this._data,
         this._className,
         'placeref_list'
       )
     } else if (e.detail.action === 'delAttr') {
-      this.delObjectByIndex(
+      return this.delObjectByIndex(
         e.detail.index,
         this._data,
         this._className,
         'attribute_list'
       )
     } else if (e.detail.action === 'delURL') {
-      this.delObjectByIndex(e.detail.index, this._data, this._className, 'urls')
+      return this.delObjectByIndex(
+        e.detail.index,
+        this._data,
+        this._className,
+        'urls'
+      )
     } else if (e.detail.action === 'delAddress') {
-      this.delObjectByIndex(
+      return this.delObjectByIndex(
         e.detail.index,
         this._data,
         this._className,
         'address_list'
       )
     } else if (e.detail.action === 'delAssociation') {
-      this.delObjectByIndex(
+      return this.delObjectByIndex(
         e.detail.index,
         this._data,
         this._className,
         'person_ref_list'
       )
     } else if (e.detail.action === 'upMediaRef') {
-      this.moveObjectByIndex(
+      return this.moveObjectByIndex(
         e.detail.index,
         this._data,
         this._className,
@@ -628,7 +706,7 @@ export class GrampsjsViewObject extends GrampsjsView {
         'up'
       )
     } else if (e.detail.action === 'downMediaRef') {
-      this.moveObjectByIndex(
+      return this.moveObjectByIndex(
         e.detail.index,
         this._data,
         this._className,
@@ -636,26 +714,29 @@ export class GrampsjsViewObject extends GrampsjsView {
         'down'
       )
     } else if (e.detail.action === 'upName') {
-      this.moveName(e.detail.handle, this._data, 'up')
+      return this.moveName(e.detail.handle, this._data, 'up')
     } else if (e.detail.action === 'downName') {
-      this.moveName(e.detail.handle, this._data, 'down')
+      return this.moveName(e.detail.handle, this._data, 'down')
     } else if (e.detail.action === 'delName') {
-      this.delName(e.detail.data, this._data)
+      return this.delName(e.detail.data, this._data)
     } else if (e.detail.action === 'addName') {
-      this.addObject(
+      return this.addObject(
         e.detail.data,
         this._data,
         this._className,
         'alternate_names'
-      ).then(result => e.detail.complete?.(result))
-    } else if (e.detail.action === 'updateName') {
-      this.updateName(e.detail.data, this._data).then(result =>
-        e.detail.complete?.(result)
       )
+    } else if (e.detail.action === 'updateName') {
+      return this.updateName(e.detail.data, this._data)
     } else if (e.detail.action === 'addPlaceName') {
-      this.addObject(e.detail.data, this._data, this._className, 'alt_names')
+      return this.addObject(
+        e.detail.data,
+        this._data,
+        this._className,
+        'alt_names'
+      )
     } else if (e.detail.action === 'updatePlaceName') {
-      this.updateObjectByIndex(
+      return this.updateObjectByIndex(
         e.detail.index,
         e.detail.data,
         this._data,
@@ -663,28 +744,28 @@ export class GrampsjsViewObject extends GrampsjsView {
         'alt_names'
       )
     } else if (e.detail.action === 'delPlaceName') {
-      this.delObjectByIndex(
+      return this.delObjectByIndex(
         e.detail.index,
         this._data,
         this._className,
         'alt_names'
       )
     } else if (e.detail.action === 'delChildRef') {
-      this.delObject(
+      return this.delObject(
         e.detail.handle,
         this._data,
         this._className,
         'child_ref_list'
       )
     } else if (e.detail.action === 'delCitation') {
-      this.delHandle(
+      return this.delHandle(
         e.detail.handle,
         this._data,
         this._className,
         'citation_list'
       )
     } else if (e.detail.action === 'upEvent') {
-      this.moveObject(
+      return this.moveObject(
         e.detail.handle,
         this._data,
         this._className,
@@ -692,7 +773,7 @@ export class GrampsjsViewObject extends GrampsjsView {
         'up'
       )
     } else if (e.detail.action === 'downEvent') {
-      this.moveObject(
+      return this.moveObject(
         e.detail.handle,
         this._data,
         this._className,
@@ -700,7 +781,7 @@ export class GrampsjsViewObject extends GrampsjsView {
         'down'
       )
     } else if (e.detail.action === 'upPlace') {
-      this.moveObjectByIndex(
+      return this.moveObjectByIndex(
         e.detail.index,
         this._data,
         this._className,
@@ -708,7 +789,7 @@ export class GrampsjsViewObject extends GrampsjsView {
         'up'
       )
     } else if (e.detail.action === 'downPlace') {
-      this.moveObjectByIndex(
+      return this.moveObjectByIndex(
         e.detail.index,
         this._data,
         this._className,
@@ -716,7 +797,7 @@ export class GrampsjsViewObject extends GrampsjsView {
         'down'
       )
     } else if (e.detail.action === 'upChildRef') {
-      this.moveObject(
+      return this.moveObject(
         e.detail.handle,
         this._data,
         this._className,
@@ -724,7 +805,7 @@ export class GrampsjsViewObject extends GrampsjsView {
         'up'
       )
     } else if (e.detail.action === 'downChildRef') {
-      this.moveObject(
+      return this.moveObject(
         e.detail.handle,
         this._data,
         this._className,
@@ -732,7 +813,7 @@ export class GrampsjsViewObject extends GrampsjsView {
         'down'
       )
     } else if (e.detail.action === 'upCitation') {
-      this.moveHandle(
+      return this.moveHandle(
         e.detail.handle,
         this._data,
         this._className,
@@ -740,7 +821,7 @@ export class GrampsjsViewObject extends GrampsjsView {
         'up'
       )
     } else if (e.detail.action === 'downCitation') {
-      this.moveHandle(
+      return this.moveHandle(
         e.detail.handle,
         this._data,
         this._className,
@@ -748,7 +829,7 @@ export class GrampsjsViewObject extends GrampsjsView {
         'down'
       )
     } else if (e.detail.action === 'updateProp') {
-      this.updateProp(
+      return this.updateProp(
         this._data,
         this._className,
         e.detail.data,
@@ -757,55 +838,57 @@ export class GrampsjsViewObject extends GrampsjsView {
     } else if (e.detail.action === 'addPersonToExistingFamily') {
       const {familyHandle, frel, mrel} = e.detail.data
       const personHandle = this._data.handle
-      this.appState.apiGet(`/api/families/${familyHandle}`).then(result => {
-        if ('data' in result) {
-          const {extended, profile, backlinks, formatted, ...family} =
-            result.data
-          // Prevent adding the person as a child to a family where they are already a parent
-          if (
-            family.father_handle === personHandle ||
-            family.mother_handle === personHandle
-          ) {
-            fireEvent(this, 'grampsjs:error', {
-              message:
-                'Cannot add person as child of a family they are already a parent of.',
-            })
-            return
+      return this.appState
+        .apiGet(`/api/families/${familyHandle}`)
+        .then(result => {
+          if ('data' in result) {
+            const {extended, profile, backlinks, formatted, ...family} =
+              result.data
+            // Prevent adding the person as a child to a family where they are already a parent
+            if (
+              family.father_handle === personHandle ||
+              family.mother_handle === personHandle
+            ) {
+              fireEvent(this, 'grampsjs:error', {
+                message:
+                  'Cannot add person as child of a family they are already a parent of.',
+              })
+              return
+            }
+            // Prevent duplicate child entries
+            const alreadyChild = (family.child_ref_list || []).some(
+              ref => ref.ref === personHandle
+            )
+            if (alreadyChild) {
+              fireEvent(this, 'grampsjs:error', {
+                message: 'Person is already a child in this family.',
+              })
+              return
+            }
+            const childRef = {
+              _class: 'ChildRef',
+              ref: personHandle,
+              frel: frel || 'Birth',
+              mrel: mrel || 'Birth',
+            }
+            const updatedFamily = {
+              _class: 'Family',
+              ...family,
+              child_ref_list: [...(family.child_ref_list || []), childRef],
+            }
+            this.appState
+              .apiPut(`/api/families/${familyHandle}`, updatedFamily)
+              .then(resultPut => {
+                if ('error' in resultPut) {
+                  fireEvent(this, 'grampsjs:error', {message: resultPut.error})
+                } else {
+                  this._updateData(false)
+                }
+              })
+          } else if ('error' in result) {
+            fireEvent(this, 'grampsjs:error', {message: result.error})
           }
-          // Prevent duplicate child entries
-          const alreadyChild = (family.child_ref_list || []).some(
-            ref => ref.ref === personHandle
-          )
-          if (alreadyChild) {
-            fireEvent(this, 'grampsjs:error', {
-              message: 'Person is already a child in this family.',
-            })
-            return
-          }
-          const childRef = {
-            _class: 'ChildRef',
-            ref: personHandle,
-            frel: frel || 'Birth',
-            mrel: mrel || 'Birth',
-          }
-          const updatedFamily = {
-            _class: 'Family',
-            ...family,
-            child_ref_list: [...(family.child_ref_list || []), childRef],
-          }
-          this.appState
-            .apiPut(`/api/families/${familyHandle}`, updatedFamily)
-            .then(resultPut => {
-              if ('error' in resultPut) {
-                fireEvent(this, 'grampsjs:error', {message: resultPut.error})
-              } else {
-                this._updateData(false)
-              }
-            })
-        } else if ('error' in result) {
-          fireEvent(this, 'grampsjs:error', {message: result.error})
-        }
-      })
+        })
     } else if (e.detail.action === 'newParentFamily') {
       const {
         father_handle: fatherHandle,
@@ -828,13 +911,15 @@ export class GrampsjsViewObject extends GrampsjsView {
         ...(motherHandle ? {mother_handle: motherHandle} : {}),
         ...(type ? {type} : {}),
       }
-      this.appState.apiPost('/api/families/', familyData).then(result => {
-        if ('error' in result) {
-          fireEvent(this, 'grampsjs:error', {message: result.error})
-        } else {
-          this._updateData(false)
-        }
-      })
+      return this.appState
+        .apiPost('/api/families/', familyData)
+        .then(result => {
+          if ('error' in result) {
+            fireEvent(this, 'grampsjs:error', {message: result.error})
+          } else {
+            this._updateData(false)
+          }
+        })
     } else if (e.detail.action === 'newPartnerFamily') {
       const {role, partner_handle: partnerHandle, type} = e.detail.data
       const personHandle = this._data.handle
@@ -845,13 +930,15 @@ export class GrampsjsViewObject extends GrampsjsView {
         ...(partnerHandle ? {[`${otherRole}_handle`]: partnerHandle} : {}),
         ...(type ? {type} : {}),
       }
-      this.appState.apiPost('/api/families/', familyData).then(result => {
-        if ('error' in result) {
-          fireEvent(this, 'grampsjs:error', {message: result.error})
-        } else {
-          this._updateData(false)
-        }
-      })
+      return this.appState
+        .apiPost('/api/families/', familyData)
+        .then(result => {
+          if ('error' in result) {
+            fireEvent(this, 'grampsjs:error', {message: result.error})
+          } else {
+            this._updateData(false)
+          }
+        })
     } else {
       // eslint-disable-next-line no-alert
       alert(JSON.stringify(e.detail))
@@ -1024,7 +1111,7 @@ export class GrampsjsViewObject extends GrampsjsView {
     // remove extended, profile, backlinks, formatted keys from object
     // eslint-disable-next-line prefer-const
     let {extended, profile, backlinks, formatted, ...objNew} = obj
-    objNew = {_class: capitalize(objType), ...objNew}
+    objNew = {_class: capitalize(objType), ...structuredClone(objNew)}
     const url = `/api/${objectTypeToEndpoint[objType]}/${obj.handle}`
 
     let result
