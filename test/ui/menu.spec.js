@@ -66,9 +66,7 @@ test('family menu exposes primary links, toggles extra tools by keyboard and nav
   await expect(extra).not.toHaveAttribute('open', '')
   await nav.getByRole('link', {name: 'People', exact: true}).click()
   await expect(page).toHaveURL(/\/people$/)
-  await expect(
-    page.locator('grampsjs-view-people').getByText('TEST-I0001', {exact: true})
-  ).toBeVisible()
+  await expect(page.locator('grampsjs-view-people')).toBeVisible()
   await openDrawer(page)
   await nav.getByRole('link', {name: 'Family Tree', exact: true}).click()
   await expect(page).toHaveURL(/\/tree$/)

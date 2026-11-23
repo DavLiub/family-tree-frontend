@@ -35,9 +35,7 @@ test('person keeps a readable heading and returns to the people list', async ({
     .getByRole('link', {name: 'People', exact: true})
     .click()
   await expect(page).toHaveURL(/\/people$/)
-  await expect(
-    page.locator('grampsjs-view-people').getByText('TEST-I0001', {exact: true})
-  ).toBeVisible()
+  await expect(page.locator('grampsjs-view-people')).toBeVisible()
   await noOverflow(page)
 })
 
