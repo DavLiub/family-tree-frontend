@@ -1,5 +1,11 @@
 import {test as base, expect} from '@playwright/test'
 import {person, token} from '../fixtures/family.js'
+import {people as peopleRecords} from '../fixtures/people.js'
+import {
+  overviewCitation,
+  overviewFamilies,
+  overviewPerson,
+} from '../fixtures/personOverview.js'
 
 const origin = 'http://127.0.0.1:4173'
 const pages = new Set(['/', '/login', '/people', '/person/TEST-I0001', '/tree'])
@@ -54,6 +60,8 @@ export const test = base.extend({
     let record = structuredClone(person)
     let nameSave
     let login
+    let people
+    let personOverview = false
     let signedIn = false
     const recordError = owner => error =>
       errors.push({
@@ -131,6 +139,16 @@ export const test = base.extend({
         return reply({message: 'Already configured'}, 405)
       } else if (method === 'GET' && url.pathname === '/api/oidc/config/') {
         return reply(login?.oidcConfig || {enabled: false})
+      } else if (
+        personOverview &&
+        method === 'GET' &&
+        url.pathname === '/api/media/synthetic-media'
+      ) {
+        return route.fulfill({
+          status: 200,
+          contentType: 'image/svg+xml',
+          body: '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"/>',
+        })
       } else if (login && method === 'POST' && url.pathname === '/api/token/') {
         login.attempts.push(request.postDataJSON())
         if (login.attempts.length === 1) {
@@ -165,6 +183,12 @@ export const test = base.extend({
               ? {
                   'Given name': 'Имя',
                   'Name type': 'Тип имени',
+                  Relationships: 'Родственные связи',
+                  _Names: '_Имена',
+                  Gallery: 'Галерея',
+                  Sources: 'Источники',
+                  '_Source Citations': '_Источники и цитаты',
+                  'Table Of Contents': 'Оглавление',
                   _Save: 'Сохранить',
                   Cancel: 'Отмена',
                   Username: 'Имя пользователя',
@@ -213,7 +237,40 @@ export const test = base.extend({
       } else if (signedIn && method === 'GET') {
         if (url.pathname === '/api/trees/-/config') return reply({})
         if (url.pathname === '/api/tasks/') return reply([])
-        if (url.pathname === '/api/people/') return reply([record])
+        if (url.pathname === '/api/people/') {
+          if (people && !url.searchParams.has('gramps_id')) {
+            expect(url.searchParams.get('profile')).toBe('self')
+            expect(url.searchParams.get('keys')).toBe(
+              'gramps_id,profile,change,handle'
+            )
+            const params = Object.fromEntries(url.searchParams)
+            people.requests.push(params)
+            if (people.mode === 'error')
+              return reply({message: 'Synthetic people load failure'}, 500)
+            const rows = people.mode === 'empty' ? [] : people.records
+            const pageNumber = Number(params.page)
+            const pageSize = Number(params.pagesize)
+            expect(pageNumber).toBeGreaterThan(0)
+            expect(pageSize).toBeGreaterThan(0)
+            return route.fulfill({
+              status: 200,
+              contentType: 'application/json',
+              headers: {'X-Total-Count': String(rows.length)},
+              body: JSON.stringify(
+                rows.slice((pageNumber - 1) * pageSize, pageNumber * pageSize)
+              ),
+            })
+          }
+          return reply([record])
+        }
+        if (personOverview && url.pathname === '/api/citations/') {
+          return reply([overviewCitation])
+        }
+        if (personOverview && url.pathname === '/api/families/') {
+          const family = overviewFamilies[url.searchParams.get('gramps_id')]
+          expect(family).toBeDefined()
+          return reply([family])
+        }
         if (
           nameSave &&
           url.pathname === '/api/types/' &&
@@ -270,6 +327,19 @@ export const test = base.extend({
       return route.abort('blockedbyclient')
     })
     const site = {
+      people(mode = 'ready') {
+        people = {
+          mode,
+          requests: [],
+          records: structuredClone(peopleRecords),
+        }
+        return people
+      },
+      personOverview(data = overviewPerson) {
+        personOverview = true
+        record = structuredClone(data)
+        return record
+      },
       login(oidcConfig) {
         login = {
           attempts: [],

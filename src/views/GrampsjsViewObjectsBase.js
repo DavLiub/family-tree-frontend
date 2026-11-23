@@ -175,35 +175,38 @@ export class GrampsjsViewObjectsBase extends GrampsjsStaleDataMixin(
     return html`
       ${this._renderFilter()}
       ${this._selectionMode ? this._renderBatchToolbar() : ''}
-      ${this.altView
-        ? this.renderAltView()
-        : html`
-            <grampsjs-table
-              serverSort
-              sortable
-              linked
-              ?selectable="${this._selectionMode}"
-              selectionKey="${this._selectionKey}"
-              ?loading="${this.loading}"
-              .columns="${this._visibleColumns}"
-              .data="${this._tableData}"
-              sortDescriptor="${this._sort}"
-              breakPoint="${this._tableBreakPoint}"
-              .appState="${this.appState}"
-              @table:row-click="${this._handleTableRowClick}"
-              @table:sort-changed="${this._handleTableSortChanged}"
-              @selection:changed="${this._handleSelectionChanged}"
-            ></grampsjs-table>
-          `}
-      <grampsjs-pagination
-        page="${this._page}"
-        pages="${this._pages}"
-        @page:changed="${this._handlePageChanged}"
-        .appState="${this.appState}"
-      ></grampsjs-pagination>
-
-      ${this.canAdd ? this.renderFab() : ''} ${this._renderColumnPickerDialog()}
+      ${this.altView ? this.renderAltView() : this._renderTable()}
+      ${this._renderPagination()} ${this.canAdd ? this.renderFab() : ''}
+      ${this._renderColumnPickerDialog()}
     `
+  }
+
+  _renderTable() {
+    return html`<grampsjs-table
+      serverSort
+      sortable
+      linked
+      ?selectable=${this._selectionMode}
+      selectionKey=${this._selectionKey}
+      ?loading=${this.loading}
+      .columns=${this._visibleColumns}
+      .data=${this._tableData}
+      sortDescriptor=${this._sort}
+      breakPoint=${this._tableBreakPoint}
+      .appState=${this.appState}
+      @table:row-click=${this._handleTableRowClick}
+      @table:sort-changed=${this._handleTableSortChanged}
+      @selection:changed=${this._handleSelectionChanged}
+    ></grampsjs-table>`
+  }
+
+  _renderPagination() {
+    return html`<grampsjs-pagination
+      page=${this._page}
+      pages=${this._pages}
+      @page:changed=${this._handlePageChanged}
+      .appState=${this.appState}
+    ></grampsjs-pagination>`
   }
 
   get canAdd() {
@@ -464,7 +467,11 @@ export class GrampsjsViewObjectsBase extends GrampsjsStaleDataMixin(
 
   renderFab() {
     return html`
-      <md-fab variant="secondary" @click=${this._handleClickAdd}>
+      <md-fab
+        variant="secondary"
+        aria-label=${this._('Add')}
+        @click=${this._handleClickAdd}
+      >
         <grampsjs-icon
           slot="icon"
           .path="${mdiPlus}"
@@ -607,7 +614,7 @@ export class GrampsjsViewObjectsBase extends GrampsjsStaleDataMixin(
   get _fullUrl() {
     let url = `${this._fetchUrl}&page=${this._page}&pagesize=${this._pageSize}`
     if (this._sort) {
-      url = `${url}&sort=${this._sort}`
+      url = `${url}&sort=${encodeURIComponent(this._sort)}`
     }
     const {filters} = this._filters
     if (filters.length > 0) {
