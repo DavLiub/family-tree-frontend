@@ -6,7 +6,6 @@ export default defineConfig({
   test: {
     ...unit.test,
     include: ['test/integration/**/*.test.js'],
-    setupFiles: ['./test/integration/setup.js'],
     coverage: {enabled: false},
   },
 })
