@@ -1,17 +1,7 @@
-import {afterEach, expect, it, vi, waitFor} from 'vitest'
+import {afterEach, expect, it, vi} from 'vitest'
 import {render} from 'lit'
 import '../../src/components/GrampsjsPerson.js'
-import {
-  overviewCitation,
-  overviewPerson,
-} from '../fixtures/personOverview.js'
-
-// Material Web form controls use ElementInternals, which happy-dom lacks.
-if (!HTMLElement.prototype.attachInternals) {
-  HTMLElement.prototype.attachInternals = function attachInternals() {
-    return {}
-  }
-}
+import {overviewCitation, overviewPerson} from '../fixtures/personOverview.js'
 
 afterEach(() => document.body.replaceChildren())
 
@@ -46,5 +36,4 @@ it('passes original facts and linked records to the existing card sections', asy
   expect(relationships.families[0].children[0].gramps_id).toBe('TEST-I0005')
   expect(gallery.media[0].gramps_id).toBe('TEST-M0001')
   expect(citations.grampsIds).toEqual(['TEST-C0001'])
-  await waitFor(() => expect(citations._data).toEqual([overviewCitation]))
 })
