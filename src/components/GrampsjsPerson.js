@@ -25,6 +25,7 @@ export class GrampsjsPerson extends GrampsjsObject {
       css`
         span.event {
           display: inline-block;
+          color: var(--md-sys-color-on-surface);
         }
 
         .events-chips {
@@ -38,6 +39,18 @@ export class GrampsjsPerson extends GrampsjsObject {
           --md-sys-color-on-secondary-container: var(
             --md-sys-color-on-surface-variant
           );
+        }
+
+        .profile-navigation {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          margin: 12px 0;
+        }
+
+        .profile-navigation md-outlined-button {
+          --md-outlined-button-container-height: 40px;
+          --md-outlined-button-label-text-size: 14px;
         }
 
         p.button-list.labeled {
@@ -55,6 +68,12 @@ export class GrampsjsPerson extends GrampsjsObject {
           }
 
           p.button-list.icon-only {
+            display: none;
+          }
+        }
+
+        @container (min-width: 1200px) {
+          .profile-navigation .profile-toc {
             display: none;
           }
         }
@@ -104,7 +123,39 @@ export class GrampsjsPerson extends GrampsjsObject {
           : ''}
       </h2>
       ${this._renderBirth()} ${this._renderDeath()} ${this._renderRelation()}
+      ${this.preview ? '' : this._renderProfileNavigation()}
       ${this.preview ? '' : this._renderButtons()}
+    `
+  }
+
+  _renderProfileNavigation() {
+    const visibleSections = new Set(this._getTabs(this.edit))
+    if (visibleSections.size <= 1) return ''
+
+    const shortcuts = [
+      {key: 'relationships', label: 'Relationships'},
+      {key: 'names', label: '_Names'},
+      {key: 'gallery', label: 'Gallery'},
+      {key: 'sources', label: 'Sources'},
+      {key: 'sourceCitations', label: '_Source Citations'},
+    ].filter(section => visibleSections.has(section.key))
+
+    return html`
+      <nav class="profile-navigation" aria-label=${this._('Table Of Contents')}>
+        ${shortcuts.map(
+          ({key, label}) => html`
+            <md-outlined-button
+              @click=${() =>
+                this._handleTocItemClick({detail: {sectionKey: key}})}
+            >
+              ${this._(label)}
+            </md-outlined-button>
+          `
+        )}
+        <md-outlined-button class="profile-toc" @click=${this._openTocDialog}>
+          ${this._('Table Of Contents')}
+        </md-outlined-button>
+      </nav>
     `
   }
 

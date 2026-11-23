@@ -473,5 +473,11 @@
     "Try changing or clearing the filters.": "Попробуйте изменить или сбросить фильтры.",
     "Unable to load people": "Не удалось загрузить список людей",
     "Name not recorded": "Имя не указано",
-    "Not recorded": "Нет сведений"
+    "Not recorded": "Нет сведений",
+    "Relationships": "Родственные связи",
+    "_Names": "_Имена",
+    "Gallery": "Галерея",
+    "Sources": "Источники",
+    "_Source Citations": "_Источники и цитаты",
+    "Table Of Contents": "Оглавление"
 }

@@ -472,5 +472,11 @@
   "Name": "Name",
   "Gramps ID": "Gramps ID",
   "Birth Date": "Birth Date",
-  "Death Date": "Death Date"
+  "Death Date": "Death Date",
+  "Relationships": "Relationships",
+  "_Names": "_Names",
+  "Gallery": "Gallery",
+  "Sources": "Sources",
+  "_Source Citations": "_Source Citations",
+  "Table Of Contents": "Table Of Contents"
 }

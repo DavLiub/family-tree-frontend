@@ -1,6 +1,11 @@
 import {test as base, expect} from '@playwright/test'
 import {person, token} from '../fixtures/family.js'
 import {people as peopleRecords} from '../fixtures/people.js'
+import {
+  overviewCitation,
+  overviewFamilies,
+  overviewPerson,
+} from '../fixtures/personOverview.js'
 
 const origin = 'http://127.0.0.1:4173'
 const pages = new Set(['/', '/login', '/people', '/person/TEST-I0001', '/tree'])
@@ -56,6 +61,7 @@ export const test = base.extend({
     let nameSave
     let login
     let people
+    let personOverview = false
     let signedIn = false
     const recordError = owner => error =>
       errors.push({
@@ -241,6 +247,14 @@ export const test = base.extend({
           }
           return reply([record])
         }
+        if (personOverview && url.pathname === '/api/citations/') {
+          return reply([overviewCitation])
+        }
+        if (personOverview && url.pathname === '/api/families/') {
+          const family = overviewFamilies[url.searchParams.get('gramps_id')]
+          expect(family).toBeDefined()
+          return reply([family])
+        }
         if (
           nameSave &&
           url.pathname === '/api/types/' &&
@@ -304,6 +318,11 @@ export const test = base.extend({
           records: structuredClone(peopleRecords),
         }
         return people
+      },
+      personOverview(data = overviewPerson) {
+        personOverview = true
+        record = structuredClone(data)
+        return record
       },
       login(oidcConfig) {
         login = {
