@@ -19,6 +19,7 @@ test('person keeps a readable heading and returns to the people list', async ({
   page,
   site,
 }) => {
+  site.people()
   await site.open('/person/TEST-I0001')
   const view = page.locator('grampsjs-view-person')
   const heading = view.locator('h2').filter({hasText: 'Alexandria Synthetic'})

@@ -27,6 +27,7 @@ test('family menu exposes primary links, toggles extra tools by keyboard and nav
   page,
   site,
 }) => {
+  site.people()
   await site.open('/person/TEST-I0001')
   await expect(
     page

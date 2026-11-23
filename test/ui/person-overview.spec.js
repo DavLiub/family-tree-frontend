@@ -10,7 +10,9 @@ test('person overview preserves facts, relationships, names, media, and citation
   await site.open('/person/TEST-I0001')
   const card = personCard(page)
 
-  await expect(card.locator('h2')).toContainText('Alexandria Synthetic Example')
+  await expect(card.locator('h2').first()).toContainText(
+    'Alexandria Synthetic Example'
+  )
   await expect(card.locator('.event').nth(0)).toContainText('about 1900')
   await expect(card.locator('.event').nth(0)).toContainText(
     'Synthetic Birth Town'

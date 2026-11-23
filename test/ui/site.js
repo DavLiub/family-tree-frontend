@@ -183,6 +183,12 @@ export const test = base.extend({
               ? {
                   'Given name': 'Имя',
                   'Name type': 'Тип имени',
+                  Relationships: 'Родственные связи',
+                  Names: 'Имена',
+                  Gallery: 'Галерея',
+                  Sources: 'Источники',
+                  'Source Citations': 'Источники и цитаты',
+                  'Table Of Contents': 'Оглавление',
                   _Save: 'Сохранить',
                   Cancel: 'Отмена',
                   Username: 'Имя пользователя',
