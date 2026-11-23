@@ -139,6 +139,16 @@ export const test = base.extend({
         return reply({message: 'Already configured'}, 405)
       } else if (method === 'GET' && url.pathname === '/api/oidc/config/') {
         return reply(login?.oidcConfig || {enabled: false})
+      } else if (
+        personOverview &&
+        method === 'GET' &&
+        url.pathname === '/api/media/synthetic-media'
+      ) {
+        return route.fulfill({
+          status: 200,
+          contentType: 'image/svg+xml',
+          body: '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"/>',
+        })
       } else if (login && method === 'POST' && url.pathname === '/api/token/') {
         login.attempts.push(request.postDataJSON())
         if (login.attempts.length === 1) {

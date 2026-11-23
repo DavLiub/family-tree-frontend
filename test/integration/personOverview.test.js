@@ -1,7 +1,17 @@
-import {afterEach, expect, it} from 'vitest'
+import {afterEach, expect, it, vi, waitFor} from 'vitest'
 import {render} from 'lit'
 import '../../src/components/GrampsjsPerson.js'
-import {overviewPerson} from '../fixtures/personOverview.js'
+import {
+  overviewCitation,
+  overviewPerson,
+} from '../fixtures/personOverview.js'
+
+// Material Web form controls use ElementInternals, which happy-dom lacks.
+if (!HTMLElement.prototype.attachInternals) {
+  HTMLElement.prototype.attachInternals = function attachInternals() {
+    return {}
+  }
+}
 
 afterEach(() => document.body.replaceChildren())
 
@@ -12,6 +22,7 @@ it('passes original facts and linked records to the existing card sections', asy
     settings: {},
     permissions: {canViewPrivate: false, canEdit: false, canAdd: false},
     dbInfo: {api: {version: '3.17.0'}},
+    apiGet: vi.fn().mockResolvedValue({data: [overviewCitation]}),
   }
   card.data = structuredClone(overviewPerson)
 
@@ -30,10 +41,10 @@ it('passes original facts and linked records to the existing card sections', asy
   await names.updateComplete
   await relationships.updateComplete
   await gallery.updateComplete
-  await citations.updateComplete
   expect(names.data[1].first_name).toBe('Synthetic Alias')
   expect(relationships.primaryParentFamily.father.gramps_id).toBe('TEST-I0002')
   expect(relationships.families[0].children[0].gramps_id).toBe('TEST-I0005')
   expect(gallery.media[0].gramps_id).toBe('TEST-M0001')
   expect(citations.grampsIds).toEqual(['TEST-C0001'])
+  await waitFor(() => expect(citations._data).toEqual([overviewCitation]))
 })
