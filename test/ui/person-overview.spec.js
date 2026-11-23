@@ -95,7 +95,7 @@ test('person section shortcuts work in Russian on a narrow viewport', async ({
   await contents.click()
   await expect(card.locator('#toc-dialog')).toHaveJSProperty('open', true)
   await expect(
-    card.locator('#toc-dialog').getByText('Relationships')
+    card.locator('#toc-dialog').getByText('Родственные связи')
   ).toBeVisible()
   await noOverflow(page)
 })
