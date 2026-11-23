@@ -2,6 +2,8 @@ import {afterEach, describe, expect, it, vi} from 'vitest'
 import '../../src/views/GrampsjsViewPeople.js'
 import {people} from '../fixtures/people.js'
 
+vi.mock('tippy.js', () => ({default: () => ({setContent: vi.fn()})}))
+
 function deferred() {
   let complete
   let fail

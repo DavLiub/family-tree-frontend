@@ -10,7 +10,9 @@ test('person overview preserves facts, relationships, names, media, and citation
   await site.open('/person/TEST-I0001')
   const card = personCard(page)
 
-  await expect(card.locator('h2')).toContainText('Alexandria Synthetic Example')
+  await expect(card.locator('h2').first()).toContainText(
+    'Alexandria Synthetic Example'
+  )
   await expect(card.locator('.event').nth(0)).toContainText('about 1900')
   await expect(card.locator('.event').nth(0)).toContainText(
     'Synthetic Birth Town'
@@ -93,7 +95,7 @@ test('person section shortcuts work in Russian on a narrow viewport', async ({
   await contents.click()
   await expect(card.locator('#toc-dialog')).toHaveJSProperty('open', true)
   await expect(
-    card.locator('#toc-dialog').getByText('Relationships')
+    card.locator('#toc-dialog').getByText('Родственные связи')
   ).toBeVisible()
   await noOverflow(page)
 })
