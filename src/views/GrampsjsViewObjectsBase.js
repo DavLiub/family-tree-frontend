@@ -614,7 +614,7 @@ export class GrampsjsViewObjectsBase extends GrampsjsStaleDataMixin(
   get _fullUrl() {
     let url = `${this._fetchUrl}&page=${this._page}&pagesize=${this._pageSize}`
     if (this._sort) {
-      url = `${url}&sort=${this._sort}`
+      url = `${url}&sort=${encodeURIComponent(this._sort)}`
     }
     const {filters} = this._filters
     if (filters.length > 0) {
