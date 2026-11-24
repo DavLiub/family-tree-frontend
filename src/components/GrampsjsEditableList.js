@@ -125,6 +125,25 @@ export class GrampsjsEditableList extends GrampsjsAppStateMixin(LitElement) {
     `
   }
 
+  _renderRowEdit(index, label = 'Edit') {
+    if (!this.appState.permissions?.canEdit) return ''
+    return html`<md-icon-button
+      slot="end"
+      aria-label="${this._(label)}"
+      title="${this._(label)}"
+      @click="${e => {
+        e.stopPropagation()
+        this._selectedIndex = index
+        this._handleEdit()
+      }}"
+    >
+      <grampsjs-icon
+        path="${mdiPencil}"
+        color="var(--mdc-theme-secondary)"
+      ></grampsjs-icon>
+    </md-icon-button>`
+  }
+
   _handleSelected(i) {
     this._selectedIndex = i
   }

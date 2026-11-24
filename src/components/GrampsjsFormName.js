@@ -6,14 +6,9 @@ import {html, css, LitElement} from 'lit'
 import '@awesome.me/webawesome/dist/components/button/button.js'
 import '@material/mwc-textfield'
 import '@material/web/iconbutton/icon-button.js'
+import '@material/web/button/text-button.js'
 
-import {
-  mdiArrowDown,
-  mdiArrowUp,
-  mdiDelete,
-  mdiDotsHorizontal,
-  mdiPlus,
-} from '@mdi/js'
+import {mdiArrowDown, mdiArrowUp, mdiDelete, mdiPlus} from '@mdi/js'
 
 import {classMap} from 'lit/directives/class-map.js'
 import {sharedStyles, iconButtonColorStyles} from '../SharedStyles.js'
@@ -23,7 +18,7 @@ import './GrampsjsFormString.js'
 import './GrampsjsFormSurname.js'
 import {GrampsjsAppStateMixin} from '../mixins/GrampsjsAppStateMixin.js'
 
-class GrampsjsFormName extends GrampsjsAppStateMixin(LitElement) {
+export class GrampsjsFormName extends GrampsjsAppStateMixin(LitElement) {
   static get styles() {
     return [
       sharedStyles,
@@ -49,9 +44,18 @@ class GrampsjsFormName extends GrampsjsAppStateMixin(LitElement) {
           border: 0;
         }
 
-        .clear {
-          clear: both;
-          margin-bottom: 2.5em;
+        details {
+          margin-top: 12px;
+        }
+
+        summary {
+          cursor: pointer;
+          padding: 8px 0;
+        }
+
+        .surname-actions {
+          display: flex;
+          justify-content: flex-end;
         }
 
         .hide {
@@ -121,136 +125,109 @@ class GrampsjsFormName extends GrampsjsAppStateMixin(LitElement) {
   }
 
   render() {
+    const surnameList = this.data.surname_list?.length
+      ? this.data.surname_list
+      : [{}]
     return html`
-      <p class="${classMap({hide: !this.showMore})}">
-        <grampsjs-form-string
-          ?webawesome=${this.webawesome}
-          @formdata:changed="${this._handleFormData}"
-          fullwidth
-          id="title"
-          value="${this.data.title || ''}"
-          label="${this._('Title')}"
-        ></grampsjs-form-string>
-      </p>
       <p>
         <grampsjs-form-string
           ?webawesome=${this.webawesome}
-          @formdata:changed="${this._handleFormData}"
+          @formdata:changed=${this._handleFormData}
           fullwidth
           id="first_name"
-          value="${this.data.first_name || ''}"
-          label="${this._('Given name')}"
+          value=${this.data.first_name || ''}
+          label=${this._('Given name')}
+          .appState=${this.appState}
         ></grampsjs-form-string>
       </p>
-      <p class="${classMap({hide: !this.showMore})}">
-        <grampsjs-form-string
-          ?webawesome=${this.webawesome}
-          @formdata:changed="${this._handleFormData}"
-          fullwidth
-          id="suffix"
-          value="${this.data.suffix || ''}"
-          label="${this._('Suffix')}"
-        ></grampsjs-form-string>
-      </p>
-      <p class="${classMap({hide: !this.showMore})}">
-        <grampsjs-form-string
-          ?webawesome=${this.webawesome}
-          @formdata:changed="${this._handleFormData}"
-          fullwidth
-          id="call"
-          value="${this.data.call || ''}"
-          label="${this._('Call name')}"
-        ></grampsjs-form-string>
-      </p>
-      <p class="${classMap({hide: !this.showMore})}">
-        <grampsjs-form-string
-          ?webawesome=${this.webawesome}
-          @formdata:changed="${this._handleFormData}"
-          fullwidth
-          id="nick"
-          value="${this.data.nick || ''}"
-          label="${this._('Nick name')}"
-        ></grampsjs-form-string>
-      </p>
-      <p class="${classMap({hide: !this.showMore})}">
-        <grampsjs-form-string
-          ?webawesome=${this.webawesome}
-          @formdata:changed="${this._handleFormData}"
-          fullwidth
-          id="famnick"
-          value="${this.data.famnick || ''}"
-          label="${this._('Family nick name')}"
-        ></grampsjs-form-string>
-      </p>
-
-      <div class="clear"></div>
-
-      <h4 class="label ${classMap({hide: !this.showMore})}">
-        ${this._('Surnames')}
-      </h4>
-      ${(this.data.surname_list || [{}]).map(
+      ${surnameList.map(
         (obj, i) => html`
-          ${this._action(
-            mdiDelete,
-            'Delete',
-            () => this._handleDeleteSurname(i),
-            !this.data?.surname_list || this.data.surname_list.length === 1,
-            !this.showMore
-          )}
-          ${this._action(
-            mdiArrowUp,
-            'Move Up',
-            () => this._handleUpSurname(i),
-            !this.data?.surname_list || i === 0,
-            !this.showMore
-          )}
-          ${this._action(
-            mdiArrowDown,
-            'Move Down',
-            () => this._handleDownSurname(i),
-            !this.data?.surname_list || i === this.data.surname_list.length - 1,
-            !this.showMore
-          )}
-
+          <div class="surname-actions">
+            ${surnameList.length > 1
+              ? this._action(mdiDelete, 'Delete', () =>
+                  this._handleDeleteSurname(i)
+                )
+              : ''}
+            ${this.showMore
+              ? html`
+                  ${this._action(
+                    mdiArrowUp,
+                    'Move Up',
+                    () => this._handleUpSurname(i),
+                    i === 0
+                  )}
+                  ${this._action(
+                    mdiArrowDown,
+                    'Move Down',
+                    () => this._handleDownSurname(i),
+                    i === surnameList.length - 1
+                  )}
+                `
+              : ''}
+          </div>
           <grampsjs-form-surname
             ?webawesome=${this.webawesome}
-            ?origintype="${this.origintype}"
-            ?showMore="${this.showMore}"
-            id="surnames${i}"
-            idx="${i}"
-            @formdata:changed="${this._handleFormData}"
-            .appState="${this.appState}"
-            .data="${obj}"
-            .types="${this.types}"
+            ?origintype=${this.origintype}
+            ?showMore=${this.showMore}
+            id=${`surnames${i}`}
+            .idx=${i}
+            @formdata:changed=${this._handleFormData}
+            .appState=${this.appState}
+            .data=${obj}
+            .types=${this.types}
             ?loadingTypes=${this.loadingTypes}
-            .typesLocale="${this.typesLocale}"
-          >
-          </grampsjs-form-surname>
-          <hr />
+            .typesLocale=${this.typesLocale}
+          ></grampsjs-form-surname>
         `
       )}
-      <p class="${classMap({hide: !this.showMore})}">
-        ${this._action(mdiPlus, 'Add', this._handleAddSurname)}
-      </p>
-
-      ${this.showMore
-        ? ''
-        : html`
-            ${this._action(
-              mdiDotsHorizontal,
-              'Show more',
-              this._handleShowMore,
-              false,
-              false,
-              'button-show-more'
-            )}
-            <grampsjs-tooltip
-              for="button-show-more"
-              .appState="${this.appState}"
-              >${this._('Show more')}</grampsjs-tooltip
+      <p>
+        ${this.webawesome
+          ? html`<wa-button
+              appearance="plain"
+              size="small"
+              @click=${this._handleAddSurname}
             >
-          `}
+              <grampsjs-icon
+                slot="start"
+                path=${mdiPlus}
+                color="currentColor"
+              ></grampsjs-icon>
+              ${this._('Add surname')}
+            </wa-button>`
+          : html`<md-text-button @click=${this._handleAddSurname}
+              >${this._('Add surname')}</md-text-button
+            >`}
+      </p>
+      <details ?open=${this.showMore} @toggle=${this._handleDetailsToggle}>
+        <summary>${this._('More name details')}</summary>
+        <slot name="name-details"></slot>
+        ${Object.entries({
+          title: 'Title',
+          suffix: 'Suffix',
+          call: 'Call name',
+          nick: 'Nick name',
+          famnick: 'Family nick name',
+        }).map(
+          ([key, label]) => html`
+            <p>
+              <grampsjs-form-string
+                ?webawesome=${this.webawesome}
+                @formdata:changed=${this._handleFormData}
+                fullwidth
+                id=${key}
+                value=${this.data[key] || ''}
+                label=${this._(label)}
+                .appState=${this.appState}
+              ></grampsjs-form-string>
+            </p>
+          `
+        )}
+      </details>
     `
+  }
+
+  _handleDetailsToggle(e) {
+    this.showMore = e.target.open
   }
 
   _handleShowMore() {
@@ -273,7 +250,10 @@ class GrampsjsFormName extends GrampsjsAppStateMixin(LitElement) {
   _handleAddSurname() {
     this.data = {
       ...this.data,
-      surname_list: [...(this.data.surname_list || [{}]), {}],
+      surname_list: [
+        ...(this.data.surname_list?.length ? this.data.surname_list : [{}]),
+        {},
+      ],
     }
     this.handleChange()
   }

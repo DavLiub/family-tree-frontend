@@ -8,10 +8,7 @@ async function openNameEditor(page, site, settings = {}) {
   await expect(
     view.locator('h2').filter({hasText: 'Alexandria Synthetic'})
   ).toBeVisible()
-  await view.locator('md-fab').click()
-  await names.locator('md-list-item').first().click()
-  // The existing editable-list toolbar has no accessible names; index 1 is Edit.
-  await names.locator('md-icon-button').nth(1).click()
+  await names.locator('md-icon-button[aria-label]').first().click()
   // The custom-element host has no visible box; assert the rendered dialog.
   await expect(page.getByRole('dialog')).toBeVisible()
   return names.locator('grampsjs-form-edit-name')
@@ -85,6 +82,7 @@ test('name type keyboard selection stays open and cancellation discards changes'
 }) => {
   const save = site.nameSave()
   const form = await openNameEditor(page, site)
+  await form.locator('grampsjs-form-name summary').click()
   const type = form.locator('grampsjs-form-select-type#name-type wa-select')
   const input = form.locator('grampsjs-form-string#first_name input')
   await expect(type).toHaveJSProperty('value', 'Birth Name')
@@ -114,13 +112,17 @@ test('name type keyboard selection stays open and cancellation discards changes'
   await expect(form).toHaveCount(0)
   expect(save.payloads).toHaveLength(0)
   const names = page.locator('grampsjs-view-person grampsjs-names')
-  await names.locator('md-icon-button').nth(1).click()
+  await names.locator('md-icon-button[aria-label="Edit name"]').first().click()
   await expect(input).toHaveValue('Alexandria Synthetic')
+  await form.locator('grampsjs-form-name summary').click()
   await expect(type).toHaveJSProperty('value', 'Birth Name')
   await form.getByRole('button', {name: 'Cancel', exact: true}).click()
   await expect(form).toHaveCount(0)
   await expect(
-    names.locator('md-icon-button').nth(1).getByRole('button')
+    names
+      .locator('md-icon-button[aria-label="Edit name"]')
+      .first()
+      .getByRole('button')
   ).toBeFocused()
   expect(save.payloads).toHaveLength(0)
 })
@@ -162,6 +164,7 @@ test('custom name type and surname changes reach the save payload without losing
     surname_list: reordered,
   })
   const form = await openNameEditor(page, site)
+  await form.locator('grampsjs-form-name summary').click()
   const type = form.locator('grampsjs-form-select-type#name-type')
   await type.locator('wa-button#button-switch-type').click()
   const custom = type.locator('wa-input#custom-type input')
@@ -172,7 +175,6 @@ test('custom name type and surname changes reach the save payload without losing
   )
   await custom.fill('Synthetic custom type')
   const name = form.locator('grampsjs-form-name')
-  await name.getByRole('button', {name: 'Show more', exact: true}).click()
   await name
     .getByRole('button', {name: 'Move Down', exact: true})
     .first()
@@ -181,7 +183,7 @@ test('custom name type and surname changes reach the save payload without losing
   await expect(
     surnames.first().locator('grampsjs-form-string#surname input')
   ).toHaveValue('Sample')
-  await name.getByRole('button', {name: 'Add', exact: true}).click()
+  await name.getByRole('button', {name: 'Add surname', exact: true}).click()
   await expect(surnames).toHaveCount(3)
   await surnames
     .last()
@@ -214,6 +216,7 @@ test('an existing unknown name type is preserved and can be saved immediately', 
   const custom = form.locator(
     'grampsjs-form-select-type#name-type wa-input#custom-type input'
   )
+  await expect(custom).not.toBeVisible()
   await expect(custom).toHaveValue('Existing synthetic custom type')
   const submit = form.locator('wa-button[variant=brand]')
   await expect(submit).not.toHaveAttribute('disabled', '')

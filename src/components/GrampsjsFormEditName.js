@@ -15,7 +15,7 @@ import {waThemeStyles} from '../SharedStyles.js'
 
 import {GrampsjsObjectForm} from './GrampsjsObjectForm.js'
 
-class GrampsjsFormEditName extends GrampsjsObjectForm {
+export class GrampsjsFormEditName extends GrampsjsObjectForm {
   static get styles() {
     return [
       super.styles,
@@ -131,23 +131,6 @@ class GrampsjsFormEditName extends GrampsjsObjectForm {
   renderForm() {
     return html`
       <div ?inert=${this.saving} aria-busy=${this.saving}>
-        <grampsjs-form-select-type
-          webawesome
-          required
-          id="name-type"
-          noheading
-          label="${this._('Name type')}"
-          .appState="${this.appState}"
-          typeName="name_types"
-          ?loadingTypes=${this.loadingTypes}
-          defaultValue="Birth Name"
-          value=${this.data?.type?.string || this.data?.type || null}
-          .types="${this.types}"
-          .typesLocale="${this.typesLocale}"
-          @formdata:changed="${this._handleFormData}"
-        >
-        </grampsjs-form-select-type>
-
         <grampsjs-form-name
           webawesome
           origintype
@@ -159,6 +142,22 @@ class GrampsjsFormEditName extends GrampsjsObjectForm {
           .types="${this.types}"
           .typesLocale="${this.typesLocale}"
         >
+          <grampsjs-form-select-type
+            slot="name-details"
+            webawesome
+            required
+            id="name-type"
+            noheading
+            label=${this._('Name type')}
+            .appState=${this.appState}
+            typeName="name_types"
+            ?loadingTypes=${this.loadingTypes}
+            defaultValue="Birth Name"
+            value=${this.data?.type?.string || this.data?.type || 'Birth Name'}
+            .types=${this.types}
+            .typesLocale=${this.typesLocale}
+            @formdata:changed=${this._handleFormData}
+          ></grampsjs-form-select-type>
         </grampsjs-form-name>
       </div>
       <span role="status" aria-live="polite"
@@ -174,7 +173,7 @@ class GrampsjsFormEditName extends GrampsjsObjectForm {
     this.errorMessage = ''
     // The view completes the actual request; dispatch itself is synchronous.
     fireEvent(this, 'object:save', {
-      data: structuredClone(this.data),
+      data: structuredClone({type: 'Birth Name', ...this.data}),
       complete: result => {
         this.saving = false
         if (

@@ -57,6 +57,7 @@ export class GrampsjsAddresses extends GrampsjsEditableList {
           path="${mdiMapMarker}"
           color="var(--grampsjs-color-icon)"
         ></grampsjs-icon>
+        ${this._renderRowEdit(i, 'Edit address')}
       </md-list-item>
     `
   }
@@ -96,6 +97,8 @@ export class GrampsjsAddresses extends GrampsjsEditableList {
     const data = {_class: 'Address'}
     this.dialogContent = html`
       <grampsjs-form-edit-address
+        awaitSave
+        @object:saved="${this._handleDialogCancel}"
         new
         dialogTitle="${this._('Address')}"
         @object:save="${this._handleAddressSave}"
@@ -108,9 +111,11 @@ export class GrampsjsAddresses extends GrampsjsEditableList {
   }
 
   _handleEdit() {
-    const data = {...this.data[this._selectedIndex]}
+    const data = structuredClone(this.data[this._selectedIndex])
     this.dialogContent = html`
       <grampsjs-form-edit-address
+        awaitSave
+        @object:saved="${this._handleDialogCancel}"
         dialogTitle="${this._('Address')}"
         @object:save="${this._handleAddressSaveEdit}"
         @object:cancel="${this._handleDialogCancel}"
@@ -131,22 +136,22 @@ export class GrampsjsAddresses extends GrampsjsEditableList {
   _handleAddressSave(e) {
     fireEvent(this, 'edit:action', {
       action: 'addAddress',
+      complete: e.detail.complete,
       data: e.detail.data,
     })
     e.preventDefault()
     e.stopPropagation()
-    this.dialogContent = ''
   }
 
   _handleAddressSaveEdit(e) {
     fireEvent(this, 'edit:action', {
       action: 'updateAddress',
+      complete: e.detail.complete,
       data: e.detail.data,
       index: this._selectedIndex,
     })
     e.preventDefault()
     e.stopPropagation()
-    this.dialogContent = ''
   }
 
   _handleDialogCancel() {
