@@ -5,6 +5,7 @@ People list view
 import {html, css} from 'lit'
 
 import {GrampsjsViewObjectsBase} from './GrampsjsViewObjectsBase.js'
+import {getPersonNameDisplay} from '../components/nameHistory.js'
 import {prettyTimeDiffTimestamp, personFilter, filterCounts} from '../util.js'
 import {
   associationsFilter,
@@ -128,9 +129,7 @@ export class GrampsjsViewPeople extends GrampsjsViewObjectsBase {
     return {
       grampsId: row.gramps_id,
       name: {
-        label: [row?.profile?.name_given, row?.profile?.name_surname]
-          .filter(Boolean)
-          .join(' '),
+        label: getPersonNameDisplay(row, value => this._(value)).text,
         grampsId: row.gramps_id,
       },
       surname: row?.profile?.name_surname,

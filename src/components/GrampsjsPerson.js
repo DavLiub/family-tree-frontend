@@ -13,6 +13,7 @@ import {
 } from '@mdi/js'
 import {GrampsjsObject} from './GrampsjsObject.js'
 import {getSymbols} from '../symbols.js'
+import {getPersonNameDisplay} from './nameHistory.js'
 import {getSummaryEvent} from './personEventEdit.js'
 import {renderContextEventEditor} from './GrampsjsFormContextEvent.js'
 import './GrampsjsImg.js'
@@ -164,25 +165,19 @@ export class GrampsjsPerson extends GrampsjsObject {
   }
 
   _displayName() {
-    if (!this.data.profile) {
-      return ''
-    }
-    const surname = this.data.profile.name_surname || '…'
-    const suffix = this.data.profile.name_suffix || ''
-    const call = this.data?.primary_name?.call
-    let given = this.data.profile.name_given || call || '…'
-    const callIndex = call && call !== given ? given.search(call) : -1
-    given =
-      callIndex > -1
-        ? html`
-            ${given.substring(0, callIndex)}
-            <span class="given-name"
-              >${given.substring(callIndex, callIndex + call.length)}</span
-            >
-            ${given.substring(callIndex + call.length)}
-          `
-        : given
-    return html`${given} ${surname} ${suffix}`
+    const {main, birth} = getPersonNameDisplay(this.data, value =>
+      this._(value)
+    )
+    const call = this.data.primary_name?.call
+    const index = call
+      ? (this.data.primary_name?.first_name || '').indexOf(call)
+      : -1
+    const heading =
+      index >= 0
+        ? html`${main.slice(0, index)}<span class="given-name">${call}</span
+            >${main.slice(index + call.length)}`
+        : main || this._('Name not recorded')
+    return html`${heading}${birth ? html` (${birth})` : ''}`
   }
 
   _renderBirth() {
@@ -567,6 +562,8 @@ export class GrampsjsPerson extends GrampsjsObject {
     return html`
       ${chips}
       <grampsjs-events
+        hasAdd
+        hasShare
         .appState="${this.appState}"
         .data=${data}
         .profile=${profile}
