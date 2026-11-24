@@ -19,7 +19,7 @@ const state = canEdit => ({
 
 const renderComponent = element => {
   const root = element.createRenderRoot()
-  render(element.render(), root)
+  render(element.render(), root, {host: element})
   return root
 }
 
@@ -33,7 +33,7 @@ describe('direct context actions', () => {
     ]
     const root = renderComponent(addresses)
     root.querySelectorAll('[aria-label="Edit address"]')[1].click()
-    render(addresses.render(), root)
+    render(addresses.render(), root, {host: addresses})
     const form = root.querySelector('grampsjs-form-edit-address')
     expect(addresses.edit).toBe(false)
     expect(form.data.street).toBe('Synthetic Second Street')
@@ -60,7 +60,7 @@ describe('direct context actions', () => {
     const root = renderComponent(gender)
     root.querySelector('[aria-label="Edit gender"]').click()
     expect(actions).not.toHaveBeenCalled()
-    render(gender.render(), root)
+    render(gender.render(), root, {host: gender})
     const form = root.querySelector('grampsjs-form-gender')
     expect(form.data.gender).toBe(1)
     const complete = vi.fn()
@@ -175,7 +175,7 @@ it('keeps a citation draft when its shared source is saved independently', async
   form.data = {source_handle: source.handle, page: 'unsaved citation page'}
   await form._openSourceEditor()
   const root = form.createRenderRoot()
-  render(form.nestedDialog, root)
+  render(form.nestedDialog, root, {host: form})
   const nested = root.querySelector('grampsjs-form-context-object')
   const changes = vi.fn()
   form.addEventListener('context:saved', changes)
@@ -253,7 +253,7 @@ describe('simple names in the person card', () => {
     buttons
       .find(button => button.textContent.includes('Add another name'))
       .click()
-    render(names.render(), root)
+    render(names.render(), root, {host: names})
     expect(root.querySelector('grampsjs-form-edit-name')).not.toBeNull()
     expect(names.data).toHaveLength(2)
   })
@@ -327,7 +327,7 @@ describe('place and repository context editing', () => {
     }
     await event._openPlaceEditor()
     const root = event.createRenderRoot()
-    render(event.nestedDialog, root)
+    render(event.nestedDialog, root, {host: event})
     const nested = root.querySelector('grampsjs-form-context-object')
     nested.data = {
       ...nested.data,
@@ -355,12 +355,12 @@ describe('place and repository context editing', () => {
       type: 'Archive',
     }
     const root = repository.createRenderRoot()
-    render(repository.renderProfile(), root)
+    render(repository.renderProfile(), root, {host: repository})
     expect(root.querySelector('[contenteditable]')).toBeNull()
     const button = root.querySelector('md-text-button')
     expect(button.textContent).toContain('Edit repository details')
     button.click()
-    render(repository.dialogContent, root)
+    render(repository.dialogContent, root, {host: repository})
     const form = root.querySelector('grampsjs-form-context-object')
     form.data.name = 'Unsaved archive name'
     form._handleDialogCancel()
