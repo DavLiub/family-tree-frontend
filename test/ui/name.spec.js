@@ -8,7 +8,10 @@ async function openNameEditor(page, site, settings = {}) {
   await expect(
     view.locator('h2').filter({hasText: 'Alexandria Synthetic'})
   ).toBeVisible()
-  await names.locator('md-icon-button[aria-label]').first().click()
+  await names
+    .getByRole('button', {name: /^(Edit name|Изменить имя)$/})
+    .first()
+    .click()
   // The custom-element host has no visible box; assert the rendered dialog.
   await expect(page.getByRole('dialog')).toBeVisible()
   return names.locator('grampsjs-form-edit-name')
@@ -112,17 +115,17 @@ test('name type keyboard selection stays open and cancellation discards changes'
   await expect(form).toHaveCount(0)
   expect(save.payloads).toHaveLength(0)
   const names = page.locator('grampsjs-view-person grampsjs-names')
-  await names.locator('md-icon-button[aria-label="Edit name"]').first().click()
+  await names
+    .getByRole('button', {name: 'Edit name', exact: true})
+    .first()
+    .click()
   await expect(input).toHaveValue('Alexandria Synthetic')
   await form.locator('grampsjs-form-name summary').click()
   await expect(type).toHaveJSProperty('value', 'Birth Name')
   await form.getByRole('button', {name: 'Cancel', exact: true}).click()
   await expect(form).toHaveCount(0)
   await expect(
-    names
-      .locator('md-icon-button[aria-label="Edit name"]')
-      .first()
-      .getByRole('button')
+    names.getByRole('button', {name: 'Edit name', exact: true}).first()
   ).toBeFocused()
   expect(save.payloads).toHaveLength(0)
 })
