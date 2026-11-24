@@ -9,6 +9,9 @@ import {
   eventTypeIconPath,
 } from '../util.js'
 import {renderIcon} from '../objectRender.js'
+import {loadContextObject} from './contextEdit.js'
+import {mdiPencil, mdiAccountEdit} from '@mdi/js'
+import {renderContextEventEditor} from './GrampsjsFormContextEvent.js'
 import './GrampsjsFormSelectObject.js'
 import './GrampsjsFormEventRef.js'
 import './GrampsjsFormNewEvent.js'
@@ -96,6 +99,42 @@ export class GrampsjsEvents extends GrampsjsEditableList {
               >${objProfile.profile.age}</span
             >`
           : ''}
+        ${this.appState.permissions?.canEdit
+          ? html`
+              <md-icon-button
+                slot="end"
+                aria-label=${this._('Edit event')}
+                title=${this._('Edit event')}
+                @click=${e => {
+                  e.stopPropagation()
+                  this._editEvent(obj)
+                }}
+              >
+                <grampsjs-icon
+                  path=${mdiPencil}
+                  color="var(--mdc-theme-secondary)"
+                ></grampsjs-icon>
+              </md-icon-button>
+            `
+          : ''}
+        ${this.edit && this.eventRef[j]
+          ? html`
+              <md-icon-button
+                slot="end"
+                aria-label=${this._('Edit event role')}
+                title=${this._('Edit event role')}
+                @click=${e => {
+                  e.stopPropagation()
+                  this._handleEditRole(j)
+                }}
+              >
+                <grampsjs-icon
+                  path=${mdiAccountEdit}
+                  color="var(--mdc-theme-secondary)"
+                ></grampsjs-icon>
+              </md-icon-button>
+            `
+          : ''}
       </md-list-item>
     `
   }
@@ -181,7 +220,39 @@ export class GrampsjsEvents extends GrampsjsEditableList {
   }
 
   _handleEdit() {
-    const data = this.eventRef[this._selectedIndex]
+    const event = this.sortData([...this.data])[this._selectedIndex]
+    if (event) this._editEvent(event)
+  }
+
+  async _editEvent(event) {
+    if (!this.appState.permissions?.canEdit || this._openingEvent) return
+    this._openingEvent = true
+    try {
+      // Timeline entries omit the structured date and place reference.
+      // Always load the real event before presenting editable fields.
+      const fresh = await loadContextObject(
+        this.appState,
+        'events',
+        event.handle
+      )
+      this.dialogContent = renderContextEventEditor(
+        this.appState,
+        fresh,
+        this._('Edit event'),
+        () => {
+          this.dialogContent = ''
+        }
+      )
+    } catch (error) {
+      fireEvent(this, 'grampsjs:error', {message: this._(error.message)})
+    } finally {
+      this._openingEvent = false
+    }
+  }
+
+  _handleEditRole(index) {
+    this._selectedIndex = index
+    const data = this.eventRef[index]
     this.dialogContent = html`
       <grampsjs-form-eventref
         id="edit-event-ref"
@@ -196,9 +267,20 @@ export class GrampsjsEvents extends GrampsjsEditableList {
     `
   }
 
-  _handleAdd() {
+  _handleAdd(preset) {
+    const type = typeof preset === 'string' ? preset : ''
+    this._newEventHandle = makeHandle()
     this.dialogContent = html`
       <grampsjs-form-new-event
+        compact
+        awaitSave
+        initialType=${type}
+        .data=${{
+          _class: 'Event',
+          ...(type ? {type} : {}),
+          role: this.defaultRole,
+        }}
+        @object:saved=${this._handleDialogCancel}
         defaultRole="${this.defaultRole}"
         @object:save="${this._handleNewEventSave}"
         @object:cancel="${this._handleDialogCancel}"
@@ -210,14 +292,14 @@ export class GrampsjsEvents extends GrampsjsEditableList {
   }
 
   _handleNewEventSave(e) {
-    const handle = makeHandle()
+    this._newEventHandle ||= makeHandle()
     fireEvent(this, 'edit:action', {
       action: 'newEvent',
-      data: {handle, ...e.detail.data},
+      complete: e.detail.complete,
+      data: {...e.detail.data, handle: this._newEventHandle},
     })
     e.preventDefault()
     e.stopPropagation()
-    this.dialogContent = ''
   }
 
   _handleEventRefSave(e) {

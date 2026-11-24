@@ -10,6 +10,7 @@ import {GrampsjsView} from './GrampsjsView.js'
 
 import {fireEvent, objectIconPath, objectTypeToEndpoint} from '../util.js'
 import {clearDraftsWithPrefix} from '../api.js'
+import {saveContextObject} from '../components/contextEdit.js'
 import '../components/GrampsjsBreadcrumbs.js'
 
 const BREADCRUMB_META = {
@@ -122,6 +123,7 @@ export class GrampsjsViewObject extends GrampsjsView {
       _data: {type: Object},
       _className: {type: String},
       _saveButton: {type: Boolean},
+      _saveStatus: {state: true},
     }
   }
 
@@ -132,19 +134,25 @@ export class GrampsjsViewObject extends GrampsjsView {
     this._data = {}
     this._className = ''
     this._saveButton = false
+    this._saveStatus = ''
     this._requestVersion = 0
     this._boundDisableEditMode = this._disableEditMode.bind(this)
     this._boundDeleteSelf = this._deleteSelf.bind(this)
     this._boundToggleEditMode = this._toggleEditMode.bind(this)
     // Reuse one function reference so disconnectedCallback can release it.
     this._boundHandleEditAction = this.handleEditAction.bind(this)
-    this._boundContextSaved = () => {
-      if (this.active) this._updateData(false)
-    }
+    this._boundContextSaved = () => this.handleContextSaved()
   }
 
   get canEdit() {
     return this.appState.permissions.canEdit
+  }
+
+  handleContextSaved() {
+    if (this.active) {
+      this._saveStatus = this._('Saved')
+      this._updateData(false)
+    }
   }
 
   getUrl() {
@@ -177,6 +185,7 @@ export class GrampsjsViewObject extends GrampsjsView {
       ${this.renderBreadcrumbs()} ${this.renderElement()}
       ${this.canEdit && !this.edit ? this.renderFab() : ''}
       ${this.editDialogContent}
+      <span role="status" aria-live="polite">${this._saveStatus}</span>
     `
   }
 
@@ -366,6 +375,7 @@ export class GrampsjsViewObject extends GrampsjsView {
       return
     }
     try {
+      this._saveStatus = ''
       const result = await this._performEditAction(e)
       e.detail.complete?.(result)
       return result
@@ -479,16 +489,12 @@ export class GrampsjsViewObject extends GrampsjsView {
         }
       })
     } else if (e.detail.action === 'newNote') {
-      return this._postObject(e.detail.data, 'note').then(data => {
-        if ('data' in data) {
-          this.addHandle(
-            e.detail.data.handle,
-            this._data,
-            this._className,
-            'note_list'
-          )
-        }
-      })
+      return this._createLinkedObject(
+        e.detail.data,
+        'note',
+        'note_list',
+        handle => handle
+      )
     } else if (e.detail.action === 'newParent') {
       const {processedData, parent} = e.detail.data
       const {handle} = processedData.filter(obj => obj._class === 'Person')[0]
@@ -518,21 +524,16 @@ export class GrampsjsViewObject extends GrampsjsView {
       })
     } else if (e.detail.action === 'newEvent') {
       const {role, ...eventData} = e.detail.data
-      return this._postObject(eventData, 'event').then(data => {
-        if ('data' in data) {
-          const eventRefData = {
-            _class: 'EventRef',
-            ref: e.detail.data.handle,
-            role,
-          }
-          this.addObject(
-            eventRefData,
-            this._data,
-            this._className,
-            'event_ref_list'
-          )
-        }
-      })
+      return this._createLinkedObject(
+        eventData,
+        'event',
+        'event_ref_list',
+        handle => ({
+          _class: 'EventRef',
+          ref: handle,
+          role,
+        })
+      )
     } else if (e.detail.action === 'addCitation') {
       return this.addHandle(
         e.detail.data.data[0],
@@ -1102,6 +1103,54 @@ export class GrampsjsViewObject extends GrampsjsView {
     })
   }
 
+  async _createLinkedObject(record, objType, property, reference) {
+    // A successful creation and a failed attachment are separate outcomes.
+    // Keep the created identity so retry attaches it instead of creating again.
+    this._createdContextRecords ??= new Map()
+    const key = `${this._data.handle}:${objType}:${record.handle}`
+    const draft = JSON.stringify(record)
+    if (!this._createdContextRecords.has(key)) {
+      const created = await this._postObject(record, objType)
+      if (!created || created.error || !('data' in created)) {
+        return created || {error: 'Unable to save record'}
+      }
+      this._createdContextRecords.set(key, draft)
+    } else if (this._createdContextRecords.get(key) !== draft) {
+      const updated = await saveContextObject(
+        this.appState,
+        objectTypeToEndpoint[objType],
+        record.handle,
+        record
+      )
+      if (
+        !updated ||
+        updated.error ||
+        !('data' in updated || 'task' in updated)
+      ) {
+        return updated || {error: 'Unable to save record'}
+      }
+      this._createdContextRecords.set(key, draft)
+    }
+    const latest = await this.appState.apiGet(
+      `/api/${objectTypeToEndpoint[this._className]}/${this._data.handle}`
+    )
+    if (!latest?.data || latest.error) {
+      return latest || {error: 'Unable to load record'}
+    }
+    if (latest.data.handle !== this._data.handle)
+      return {error: 'Record not found'}
+    return this._updateObject(latest.data, this._className, owner => {
+      const refs = owner[property] || []
+      const attached = refs.some(ref =>
+        typeof ref === 'string'
+          ? ref === record.handle
+          : ref.ref === record.handle
+      )
+      if (!attached) owner[property] = [...refs, reference(record.handle)]
+      return owner
+    })
+  }
+
   async _postObject(obj, objType) {
     const url = `/api/${objectTypeToEndpoint[objType]}/`
     return this.appState.apiPost(url, obj)
@@ -1131,6 +1180,7 @@ export class GrampsjsViewObject extends GrampsjsView {
       return failure
     }
     // A refresh failure must not turn a completed write into a retryable save.
+    this._saveStatus = this._('Saved')
     try {
       if (editorDraftPrefix) {
         clearDraftsWithPrefix(editorDraftPrefix)

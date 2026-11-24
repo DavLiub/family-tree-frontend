@@ -267,6 +267,7 @@ class GrampsjsEditor extends GrampsjsAppStateMixin(LitElement) {
   static get properties() {
     return {
       initialData: {type: Object},
+      localSave: {type: Boolean},
       data: {type: Object},
       cursorPosition: {type: Array},
       _dialogContent: {type: String},
@@ -281,6 +282,7 @@ class GrampsjsEditor extends GrampsjsAppStateMixin(LitElement) {
   constructor() {
     super()
     this.initialData = {_class: 'StyledText', string: '', tags: []}
+    this.localSave = false
     this.data = {_class: 'StyledText', string: '', tags: []}
     this.cursorPosition = [0]
     this._dialogContent = null
@@ -1280,6 +1282,8 @@ class GrampsjsEditor extends GrampsjsAppStateMixin(LitElement) {
   }
 
   _handleSaveButton() {
+    // Embedded note forms save the Note, never the surrounding Person/Family.
+    if (this.localSave) return
     // Cancel any pending draft save
     if (this._draftSaveTimer) {
       clearTimeout(this._draftSaveTimer)
@@ -1306,10 +1310,12 @@ class GrampsjsEditor extends GrampsjsAppStateMixin(LitElement) {
 
   connectedCallback() {
     super.connectedCallback()
-    window.addEventListener('edit-mode:save', this._boundHandleSaveButton)
+    if (!this.localSave) {
+      window.addEventListener('edit-mode:save', this._boundHandleSaveButton)
+      window.addEventListener('edit:cancel', this._boundHandleCancel)
+      window.addEventListener('object:cancel', this._boundHandleCancel)
+    }
     window.addEventListener('beforeunload', this._boundHandleBeforeUnload)
-    window.addEventListener('edit:cancel', this._boundHandleCancel)
-    window.addEventListener('object:cancel', this._boundHandleCancel)
   }
 
   disconnectedCallback() {

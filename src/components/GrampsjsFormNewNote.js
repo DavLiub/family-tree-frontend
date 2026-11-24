@@ -25,6 +25,15 @@ export class GrampsjsFormNewNote extends GrampsjsNewObjectTagsMixin(
     this.data = {_class: 'Note', text: {_class: 'StyledText', string: ''}}
   }
 
+  _handleDialogSave() {
+    this.data = {...this.data, type: this.data.type || this._noteDefaultType}
+    super._handleDialogSave()
+  }
+
+  get isValid() {
+    return Boolean(this.data.text?.string?.trim())
+  }
+
   checkFormValidity() {
     const noteText = this.shadowRoot.querySelector('grampsjs-editor')
     this.isFormValid = noteText.data.string.trim() !== ''
