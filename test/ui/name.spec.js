@@ -79,16 +79,15 @@ test('name editor retains failed input, blocks duplicate save and retries', asyn
   })
 })
 
-test('name type keyboard selection stays open and cancellation discards changes', async ({
+test('name history keyboard selection stays open and cancellation discards changes', async ({
   page,
   site,
 }) => {
   const save = site.nameSave()
   const form = await openNameEditor(page, site)
-  await form.locator('grampsjs-form-name summary').click()
-  const type = form.locator('grampsjs-form-select-type#name-type wa-select')
+  const type = form.locator('wa-select#name-kind')
   const input = form.locator('grampsjs-form-string#first_name input')
-  await expect(type).toHaveJSProperty('value', 'Birth Name')
+  await expect(type).toHaveJSProperty('value', 'birth')
   const combobox = type.getByRole('combobox')
   await combobox.focus()
   await page.keyboard.press('Space')
@@ -102,7 +101,7 @@ test('name type keyboard selection stays open and cancellation discards changes'
   await page.keyboard.press('End')
   await page.keyboard.press('Enter')
   await expect(type).toHaveJSProperty('open', false)
-  await expect(type).toHaveJSProperty('value', 'Also Known As')
+  await expect(type).toHaveJSProperty('value', 'change')
   await expect(page.getByRole('dialog')).toBeVisible()
   expect(save.payloads).toHaveLength(0)
   // Empty given names remain permitted; this migration adds no name requirement.
@@ -120,8 +119,7 @@ test('name type keyboard selection stays open and cancellation discards changes'
     .first()
     .click()
   await expect(input).toHaveValue('Alexandria Synthetic')
-  await form.locator('grampsjs-form-name summary').click()
-  await expect(type).toHaveJSProperty('value', 'Birth Name')
+  await expect(type).toHaveJSProperty('value', 'birth')
   await form.getByRole('button', {name: 'Cancel', exact: true}).click()
   await expect(form).toHaveCount(0)
   await expect(
@@ -154,7 +152,7 @@ test('Russian dark name editor keeps labelled actions within the viewport', asyn
   await expect(form).toHaveCount(0)
 })
 
-test('custom name type and surname changes reach the save payload without losing hidden fields', async ({
+test('name change reason and surnames reach the save payload without losing hidden fields', async ({
   page,
   site,
 }) => {
@@ -163,20 +161,18 @@ test('custom name type and surname changes reach the save payload without losing
     person.primary_name.surname_list[0],
   ]
   const save = site.nameSave({
-    type: 'Synthetic custom type',
+    type: 'Name change: Synthetic reason',
     surname_list: reordered,
   })
   const form = await openNameEditor(page, site)
+  const type = form.locator('wa-select#name-kind')
+  await type.getByRole('combobox').focus()
+  await page.keyboard.press('Space')
+  await page.keyboard.press('End')
+  await page.keyboard.press('Enter')
+  const custom = form.locator('grampsjs-form-string#name-change-text input')
+  await custom.fill('Synthetic reason')
   await form.locator('grampsjs-form-name summary').click()
-  const type = form.locator('grampsjs-form-select-type#name-type')
-  await type.locator('wa-button#button-switch-type').click()
-  const custom = type.locator('wa-input#custom-type input')
-  await expect(custom).toHaveValue('')
-  await expect(form.locator('wa-button[variant=brand]')).toHaveAttribute(
-    'disabled',
-    ''
-  )
-  await custom.fill('Synthetic custom type')
   const name = form.locator('grampsjs-form-name')
   await name
     .getByRole('button', {name: 'Move Down', exact: true})
@@ -199,12 +195,14 @@ test('custom name type and surname changes reach the save payload without losing
   await form.locator('wa-button[variant=brand]').click()
   await expect.poll(() => save.payloads.length).toBe(1)
   expect(save.payloads[0].primary_name.first_name).toBe('')
-  expect(save.payloads[0].primary_name.type).toBe('Synthetic custom type')
+  expect(save.payloads[0].primary_name.type).toBe(
+    'Name change: Synthetic reason'
+  )
   expect(save.payloads[0].primary_name.surname_list).toEqual(reordered)
   await expect.poll(() => typeof save.release).toBe('function')
   save.release()
   await expect(form.getByRole('alert')).toBeVisible()
-  await expect(custom).toHaveValue('Synthetic custom type')
+  await expect(custom).toHaveValue('Synthetic reason')
   await form.getByRole('button', {name: 'Cancel', exact: true}).click()
   await expect(form).toHaveCount(0)
   expect(save.payloads).toHaveLength(1)

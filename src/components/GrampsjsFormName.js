@@ -13,6 +13,7 @@ import {mdiArrowDown, mdiArrowUp, mdiDelete, mdiPlus} from '@mdi/js'
 import {classMap} from 'lit/directives/class-map.js'
 import {sharedStyles, iconButtonColorStyles} from '../SharedStyles.js'
 import {fireEvent} from '../util.js'
+import {getNameParts, updateNameParts} from './nameHistory.js'
 import './GrampsjsIcon.js'
 import './GrampsjsFormString.js'
 import './GrampsjsFormSurname.js'
@@ -77,6 +78,8 @@ export class GrampsjsFormName extends GrampsjsAppStateMixin(LitElement) {
   static get properties() {
     return {
       webawesome: {type: Boolean},
+      historyMode: {type: Boolean},
+      _expandedFields: {state: true},
       data: {type: Object},
       showMore: {type: Boolean},
       loadingTypes: {type: Boolean},
@@ -89,6 +92,8 @@ export class GrampsjsFormName extends GrampsjsAppStateMixin(LitElement) {
   constructor() {
     super()
     this.webawesome = false
+    this.historyMode = false
+    this._expandedFields = []
     this.data = {_class: 'Name'}
     this.showMore = false
     this.types = {}
@@ -125,61 +130,71 @@ export class GrampsjsFormName extends GrampsjsAppStateMixin(LitElement) {
   }
 
   render() {
-    const surnameList = this.data.surname_list?.length
-      ? this.data.surname_list
-      : [{}]
+    const parts = this.historyMode ? getNameParts(this.data) : null
+    const surnames = parts ? parts.surnames : this.data.surname_list
+    const surnameList = surnames?.length ? surnames : [{}]
+    const showField = (key, value) =>
+      !this.historyMode || Boolean(value) || this._expandedFields.includes(key)
     return html`
-      <p>
-        <grampsjs-form-string
-          ?webawesome=${this.webawesome}
-          @formdata:changed=${this._handleFormData}
-          fullwidth
-          id="first_name"
-          value=${this.data.first_name || ''}
-          label=${this._('Given name')}
-          .appState=${this.appState}
-        ></grampsjs-form-string>
-      </p>
-      ${surnameList.map(
-        (obj, i) => html`
-          <div class="surname-actions">
-            ${surnameList.length > 1
-              ? this._action(mdiDelete, 'Delete', () =>
-                  this._handleDeleteSurname(i)
-                )
-              : ''}
-            ${this.showMore
-              ? html`
-                  ${this._action(
-                    mdiArrowUp,
-                    'Move Up',
-                    () => this._handleUpSurname(i),
-                    i === 0
-                  )}
-                  ${this._action(
-                    mdiArrowDown,
-                    'Move Down',
-                    () => this._handleDownSurname(i),
-                    i === surnameList.length - 1
-                  )}
-                `
-              : ''}
-          </div>
-          <grampsjs-form-surname
-            ?webawesome=${this.webawesome}
-            ?origintype=${this.origintype}
-            ?showMore=${this.showMore}
-            id=${`surnames${i}`}
-            .idx=${i}
-            @formdata:changed=${this._handleFormData}
-            .appState=${this.appState}
-            .data=${obj}
-            .types=${this.types}
-            ?loadingTypes=${this.loadingTypes}
-            .typesLocale=${this.typesLocale}
-          ></grampsjs-form-surname>
-        `
-      )}
+      ${showField('given', this.data.first_name)
+        ? this._renderNameField(
+            'first_name',
+            'Given name',
+            this.data.first_name
+          )
+        : this._renderAddField('given', 'Add given name')}
+      ${this.historyMode
+        ? (parts.patronymicParts || []).length > 1
+          ? html`<p>${this._('Patronymic')}: ${parts.patronymic}</p>`
+          : showField('patronymic', parts.patronymic)
+          ? this._renderNameField('patronymic', 'Patronymic', parts.patronymic)
+          : this._renderAddField('patronymic', 'Add patronymic')
+        : ''}
+      ${showField(
+        'surname',
+        surnames?.some(item => item.surname)
+      )
+        ? surnameList.map(
+            (obj, i) => html`
+              <div class="surname-actions">
+                ${surnameList.length > 1
+                  ? this._action(mdiDelete, 'Delete', () =>
+                      this._handleDeleteSurname(i)
+                    )
+                  : ''}
+                ${this.showMore
+                  ? html`
+                      ${this._action(
+                        mdiArrowUp,
+                        'Move Up',
+                        () => this._handleUpSurname(i),
+                        i === 0
+                      )}
+                      ${this._action(
+                        mdiArrowDown,
+                        'Move Down',
+                        () => this._handleDownSurname(i),
+                        i === surnameList.length - 1
+                      )}
+                    `
+                  : ''}
+              </div>
+              <grampsjs-form-surname
+                ?webawesome=${this.webawesome}
+                ?origintype=${this.origintype}
+                ?showMore=${this.showMore}
+                id=${`surnames${i}`}
+                .idx=${i}
+                @formdata:changed=${this._handleFormData}
+                .appState=${this.appState}
+                .data=${obj}
+                .types=${this.types}
+                ?loadingTypes=${this.loadingTypes}
+                .typesLocale=${this.typesLocale}
+              ></grampsjs-form-surname>
+            `
+          )
+        : ''}
       <p>
         ${this.webawesome
           ? html`<wa-button
@@ -201,6 +216,22 @@ export class GrampsjsFormName extends GrampsjsAppStateMixin(LitElement) {
       <details ?open=${this.showMore} @toggle=${this._handleDetailsToggle}>
         <summary>${this._('More name details')}</summary>
         <slot name="name-details"></slot>
+        ${this.historyMode && (parts.patronymicParts || []).length > 1
+          ? html`
+              <h4>${this._('Patronymic')}</h4>
+              ${parts.patronymicParts.map(
+                (part, index) => html`<grampsjs-form-surname
+                  ?webawesome=${this.webawesome}
+                  showMore
+                  id=${`patronymics${index}`}
+                  .idx=${index}
+                  .data=${part}
+                  .appState=${this.appState}
+                  @formdata:changed=${this._handleFormData}
+                ></grampsjs-form-surname>`
+              )}
+            `
+          : ''}
         ${Object.entries({
           title: 'Title',
           suffix: 'Suffix',
@@ -226,6 +257,39 @@ export class GrampsjsFormName extends GrampsjsAppStateMixin(LitElement) {
     `
   }
 
+  _renderNameField(id, label, value) {
+    return html`<p>
+      <grampsjs-form-string
+        ?webawesome=${this.webawesome}
+        @formdata:changed=${this._handleFormData}
+        fullwidth
+        id=${id}
+        value=${value || ''}
+        label=${this._(label)}
+        .appState=${this.appState}
+      ></grampsjs-form-string>
+    </p>`
+  }
+
+  _renderAddField(key, label) {
+    const expand = () => {
+      this._expandedFields = [...this._expandedFields, key]
+      this.updateComplete.then(() => {
+        const field = this.renderRoot.querySelector(
+          key === 'given' ? '#first_name' : `#${key}`
+        )
+        field?.updateComplete.then(() =>
+          field.renderRoot.querySelector('wa-input, mwc-textfield')?.focus()
+        )
+      })
+    }
+    return this.webawesome
+      ? html`<wa-button appearance="plain" size="small" @click=${expand}
+          >${this._(label)}</wa-button
+        >`
+      : html`<md-text-button @click=${expand}>${this._(label)}</md-text-button>`
+  }
+
   _handleDetailsToggle(e) {
     this.showMore = e.target.open
   }
@@ -240,6 +304,7 @@ export class GrampsjsFormName extends GrampsjsAppStateMixin(LitElement) {
       .forEach(element => element.reset())
     this.shadowRoot.querySelector('grampsjs-form-surname').reset()
     this.showMore = false
+    this._expandedFields = []
     this.data = {_class: 'Name'}
   }
 
@@ -248,6 +313,22 @@ export class GrampsjsFormName extends GrampsjsAppStateMixin(LitElement) {
   }
 
   _handleAddSurname() {
+    if (this.historyMode) {
+      const parts = getNameParts(this.data)
+      if (
+        !parts.surnames.some(part => part.surname) &&
+        !this._expandedFields.includes('surname')
+      ) {
+        this._expandedFields = [...this._expandedFields, 'surname']
+        return
+      }
+      this._expandedFields = [...this._expandedFields, 'surname']
+      this.data = updateNameParts(this.data, {
+        surnames: [...parts.surnames, {}],
+      })
+      this.handleChange()
+      return
+    }
     this.data = {
       ...this.data,
       surname_list: [
@@ -259,6 +340,12 @@ export class GrampsjsFormName extends GrampsjsAppStateMixin(LitElement) {
   }
 
   _handleDeleteSurname(i) {
+    if (this.historyMode) {
+      this._updateHistorySurnames(
+        getNameParts(this.data).surnames.filter((_, index) => index !== i)
+      )
+      return
+    }
     this.data = {
       ...this.data,
       surname_list: this.data.surname_list.filter((_, index) => index !== i),
@@ -267,6 +354,12 @@ export class GrampsjsFormName extends GrampsjsAppStateMixin(LitElement) {
   }
 
   _handleUpSurname(i) {
+    if (this.historyMode) {
+      this._updateHistorySurnames(
+        this.moveItem(getNameParts(this.data).surnames, i, i - 1)
+      )
+      return
+    }
     this.data = {
       ...this.data,
       surname_list: [...this.moveItem(this.data.surname_list, i, i - 1)],
@@ -275,6 +368,12 @@ export class GrampsjsFormName extends GrampsjsAppStateMixin(LitElement) {
   }
 
   _handleDownSurname(i) {
+    if (this.historyMode) {
+      this._updateHistorySurnames(
+        this.moveItem(getNameParts(this.data).surnames, i, i + 1)
+      )
+      return
+    }
     this.data = {
       ...this.data,
       surname_list: [...this.moveItem(this.data.surname_list, i, i + 1)],
@@ -282,8 +381,40 @@ export class GrampsjsFormName extends GrampsjsAppStateMixin(LitElement) {
     this.handleChange()
   }
 
+  _updateHistorySurnames(surnames) {
+    this.data = updateNameParts(this.data, {surnames})
+    this.handleChange()
+  }
+
   _handleFormData(e) {
     const originalTarget = e.composedPath()[0]
+    if (
+      this.historyMode &&
+      ['first_name', 'patronymic'].includes(originalTarget.id)
+    ) {
+      const key = originalTarget.id === 'first_name' ? 'given' : 'patronymic'
+      this._expandedFields = [...new Set([...this._expandedFields, key])]
+      this.data = updateNameParts(this.data, {[key]: e.detail.data})
+      e.stopPropagation()
+      this.handleChange()
+      return
+    }
+    if (this.historyMode && originalTarget.id.startsWith('patronymics')) {
+      const patronymicParts = [...getNameParts(this.data).patronymicParts]
+      patronymicParts[e.detail.idx] = e.detail.data
+      this.data = updateNameParts(this.data, {patronymicParts})
+      e.stopPropagation()
+      this.handleChange()
+      return
+    }
+    if (this.historyMode && originalTarget.id.startsWith('surnames')) {
+      const surnames = [...getNameParts(this.data).surnames]
+      surnames[e.detail.idx] = e.detail.data
+      this._expandedFields = [...new Set([...this._expandedFields, 'surname'])]
+      this._updateHistorySurnames(surnames)
+      e.stopPropagation()
+      return
+    }
     if (
       ['first_name', 'call', 'nick', 'famnick', 'title', 'suffix'].includes(
         originalTarget.id
