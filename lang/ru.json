@@ -528,5 +528,10 @@
     "More details": "Подробнее",
     "More name details": "Подробнее об имени",
     "More surname details": "Подробнее о фамилии",
-    "Add surname": "Добавить фамилию"
+    "Add surname": "Добавить фамилию",
+    "Other event": "Другое событие",
+    "Edit this place": "Изменить это место",
+    "Place changes are saved separately from this event.": "Изменения места сохраняются отдельно от этого события.",
+    "Edit repository details": "Изменить сведения о хранилище",
+    "The record was created but could not be attached. Save again to retry.": "Запись создана, но не прикреплена. Повторите сохранение, чтобы прикрепить её."
 }

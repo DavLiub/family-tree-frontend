@@ -527,5 +527,10 @@
   "More details": "More details",
   "More name details": "More name details",
   "More surname details": "More surname details",
-  "Add surname": "Add surname"
+  "Add surname": "Add surname",
+  "Other event": "Other event",
+  "Edit this place": "Edit this place",
+  "Place changes are saved separately from this event.": "Place changes are saved separately from this event.",
+  "Edit repository details": "Edit repository details",
+  "The record was created but could not be attached. Save again to retry.": "The record was created but could not be attached. Save again to retry."
 }

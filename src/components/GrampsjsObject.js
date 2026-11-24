@@ -636,10 +636,23 @@ export class GrampsjsObject extends GrampsjsAppStateMixin(LitElement) {
       key => _allTabs[key].conditionEdit(this.data) && key !== 'names'
     )
     if (!available.length) return ''
+    const options = available.flatMap(key => {
+      if (key !== 'events') return [{value: key, label: _allTabs[key].title}]
+      const types =
+        this._objectEndpoint === 'people'
+          ? ['Birth', 'Death']
+          : this._objectEndpoint === 'families'
+          ? ['Marriage', 'Divorce']
+          : []
+      return [
+        ...types.map(type => ({value: `events:${type}`, label: type})),
+        {value: key, label: types.length ? 'Other event' : _allTabs[key].title},
+      ]
+    })
     return html`<md-outlined-select
       label=${this._('Add information')}
       @change=${e => {
-        const key = e.target.value
+        const [key, eventType] = e.target.value.split(':')
         if (available.includes(key)) {
           this._addedSections = [...new Set([...this._addedSections, key])]
           e.target.value = ''
@@ -653,14 +666,15 @@ export class GrampsjsObject extends GrampsjsAppStateMixin(LitElement) {
               links: ['grampsjs-urls', '_handleAdd'],
             }
             const action = actions[key]
-            if (action) section?.querySelector(action[0])?.[action[1]]()
+            if (action)
+              section?.querySelector(action[0])?.[action[1]](eventType)
           })
         }
       }}
     >
-      ${available.map(
-        key => html`<md-select-option value=${key}>
-          <div slot="headline">${this._(_allTabs[key].title)}</div>
+      ${options.map(
+        option => html`<md-select-option value=${option.value}>
+          <div slot="headline">${this._(option.label)}</div>
         </md-select-option>`
       )}
     </md-outlined-select>`
