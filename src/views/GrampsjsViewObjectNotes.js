@@ -1,6 +1,6 @@
 import {html, css} from 'lit'
 
-import {mdiLinkOff, mdiLinkPlus, mdiPlus, mdiPencil} from '@mdi/js'
+import {mdiLinkOff, mdiPencil} from '@mdi/js'
 
 import '@material/web/button/text-button'
 import '@material/web/iconbutton/icon-button.js'
@@ -13,6 +13,7 @@ import '../components/GrampsjsFormContextNote.js'
 import '../components/GrampsjsIcon.js'
 import '../components/GrampsjsTooltip.js'
 import {fireEvent, makeHandle} from '../util.js'
+import {renderSectionCreateActions} from '../components/sectionActions.js'
 
 const BASE_DIR = ''
 
@@ -99,24 +100,21 @@ export class GrampsjsViewObjectNotes extends GrampsjsViewObjectsDetail {
     return html`${skeletonNotes}`
   }
 
+  renderContent() {
+    return html`${this.renderEdit()}
+    ${this.loading ? this.renderLoading() : this.renderElements()}
+    ${this.dialogContent}`
+  }
+
   renderEdit() {
-    return html`
-      <div>
-        <md-icon-button class="edit" @click="${this._handleShareClick}">
-          <grampsjs-icon
-            path="${mdiLinkPlus}"
-            color="var(--mdc-theme-secondary)"
-          ></grampsjs-icon>
-        </md-icon-button>
-        <md-icon-button class="edit" @click="${this._handleAddClick}">
-          <grampsjs-icon
-            path="${mdiPlus}"
-            color="var(--mdc-theme-secondary)"
-          ></grampsjs-icon>
-        </md-icon-button>
-        ${this._data.length === 0 ? this.dialogContent : ''}
-      </div>
-    `
+    return renderSectionCreateActions(this, {
+      add: true,
+      attach: true,
+      newObject: true,
+      addLabel: 'Add note',
+      onAdd: () => this._handleAddClick(),
+      onAttach: () => this._handleShareClick(),
+    })
   }
 
   _handleAddClick() {

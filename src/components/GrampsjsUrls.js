@@ -12,6 +12,11 @@ import {fixUrl} from '../urlUtil.js'
 import '@material/web/list/list-item.js'
 
 export class GrampsjsUrls extends GrampsjsEditableList {
+  constructor() {
+    super()
+    this.addLabel = 'Add link'
+  }
+
   row(obj, i) {
     return html`
       <md-list-item
