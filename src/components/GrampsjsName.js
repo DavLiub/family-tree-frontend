@@ -11,6 +11,19 @@ export class GrampsjsName extends GrampsjsAppStateMixin(LitElement) {
     return [
       sharedStyles,
       css`
+        p {
+          margin-block: 0 0.35rem;
+          overflow-wrap: anywhere;
+        }
+
+        details {
+          white-space: normal;
+        }
+
+        summary {
+          cursor: pointer;
+        }
+
         h4 {
           clear: left;
         }
@@ -21,15 +34,46 @@ export class GrampsjsName extends GrampsjsAppStateMixin(LitElement) {
   static get properties() {
     return {
       data: {type: Object},
+      compact: {type: Boolean},
     }
   }
 
   constructor() {
     super()
     this.data = {}
+    this.compact = false
   }
 
   render() {
+    if (!this.compact) return this._renderDetails()
+    const surnames = (this.data.surname_list || [])
+      .map(surname =>
+        [surname.prefix, surname.surname, surname.connector]
+          .filter(Boolean)
+          .join(' ')
+      )
+      .join(' ')
+    const hasDetails =
+      this.data.type ||
+      ['title', 'suffix', 'call', 'nick', 'famnick'].some(
+        key => this.data[key]
+      ) ||
+      (this.data.surname_list || []).some(surname => surname.origintype)
+    return html`
+      <p>${[this.data.first_name, surnames].filter(Boolean).join(' ')}</p>
+      ${hasDetails
+        ? html`<details
+            @click="${e => e.stopPropagation()}"
+            @keydown="${e => e.stopPropagation()}"
+          >
+            <summary>${this._('More details')}</summary>
+            ${this._renderDetails()}
+          </details>`
+        : ''}
+    `
+  }
+
+  _renderDetails() {
     return html`
       <h4>${this._(this.data.type)}</h4>
       <dl>
@@ -73,7 +117,7 @@ export class GrampsjsName extends GrampsjsAppStateMixin(LitElement) {
               </div>
             `
           : ''}
-        ${this.data.surname_list.length > 0
+        ${(this.data.surname_list || []).length > 0
           ? html`
               ${this.data.surname_list.map(
                 surname => html`

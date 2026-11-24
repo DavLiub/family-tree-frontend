@@ -5,6 +5,8 @@ import {
   mdiDelete,
   mdiLinkPlus,
   mdiPlus,
+  mdiPencil,
+  mdiStarOutline,
 } from '@mdi/js'
 
 import {sharedStyles} from '../SharedStyles.js'
@@ -12,6 +14,7 @@ import './GrampsjsImg.js'
 import './GrampsjsIcon.js'
 import '../views/GrampsjsViewMediaLightbox.js'
 import './GrampsjsFormMediaRef.js'
+import './GrampsjsFormContextObject.js'
 import './GrampsjsFormNewMedia.js'
 import '@material/web/iconbutton/icon-button.js'
 import {fireEvent} from '../util.js'
@@ -51,6 +54,9 @@ export class GrampsjsGallery extends GrampsjsAppStateMixin(LitElement) {
           right: 4px;
           display: flex;
           gap: 2px;
+          max-width: calc(100% - 8px);
+          flex-wrap: wrap;
+          justify-content: flex-end;
         }
 
         .tile-overlay md-icon-button {
@@ -147,10 +153,11 @@ export class GrampsjsGallery extends GrampsjsAppStateMixin(LitElement) {
           checksum="${checksum}"
           @click="${() => this._handleClick(i)}"
         ></grampsjs-img>
-        ${this.edit
+        ${this.edit || this.appState.permissions?.canEdit
           ? html`
               <div class="tile-overlay">
-                ${i > 0
+                ${this._renderContextActions(i)}
+                ${this.edit && i > 0
                   ? html`
                       <md-icon-button
                         @click="${e => {
@@ -165,7 +172,7 @@ export class GrampsjsGallery extends GrampsjsAppStateMixin(LitElement) {
                       </md-icon-button>
                     `
                   : ''}
-                ${i < this.media.length - 1
+                ${this.edit && i < this.media.length - 1
                   ? html`
                       <md-icon-button
                         @click="${e => {
@@ -180,22 +187,68 @@ export class GrampsjsGallery extends GrampsjsAppStateMixin(LitElement) {
                       </md-icon-button>
                     `
                   : ''}
-                <md-icon-button
-                  @click="${e => {
-                    e.stopPropagation()
-                    this._handleMediaRefDel(i)
-                  }}"
-                >
-                  <grampsjs-icon
-                    path="${mdiDelete}"
-                    color="var(--mdc-theme-secondary)"
-                  ></grampsjs-icon>
-                </md-icon-button>
+                ${this.edit
+                  ? html`<md-icon-button
+                      aria-label="${this._('Remove from card')}"
+                      @click="${e => {
+                        e.stopPropagation()
+                        this._handleMediaRefDel(i)
+                      }}"
+                    >
+                      <grampsjs-icon
+                        path="${mdiDelete}"
+                        color="var(--mdc-theme-secondary)"
+                      ></grampsjs-icon>
+                    </md-icon-button>`
+                  : ''}
               </div>
             `
           : ''}
       </div>
     `
+  }
+
+  _renderContextActions(index) {
+    if (!this.appState.permissions?.canEdit) return ''
+    return html`
+      <md-icon-button
+        aria-label="${this._('Edit media details')}"
+        title="${this._('Edit media details')}"
+        @click="${e => {
+          e.stopPropagation()
+          this._handleContextEdit(index)
+        }}"
+        ><grampsjs-icon path="${mdiPencil}"></grampsjs-icon
+      ></md-icon-button>
+      ${index > 0
+        ? html`<md-icon-button
+            aria-label="${this._('Make primary photo')}"
+            title="${this._('Make primary photo')}"
+            @click="${e => {
+              e.stopPropagation()
+              fireEvent(this, 'edit:action', {
+                action: 'makePrimaryMedia',
+                index,
+              })
+            }}"
+            ><grampsjs-icon path="${mdiStarOutline}"></grampsjs-icon
+          ></md-icon-button>`
+        : ''}
+    `
+  }
+
+  _handleContextEdit(index) {
+    const obj = this.media[index]
+    if (!obj?.handle) return
+    this.dialogContent = html`<grampsjs-form-context-object
+      endpoint="media"
+      handle="${obj.handle}"
+      dialogTitle="${this._('Edit media details')}"
+      .data="${structuredClone(obj)}"
+      .appState="${this.appState}"
+      @object:saved="${this._handleMediaRefCancel}"
+      @object:cancel="${this._handleMediaRefCancel}"
+    ></grampsjs-form-context-object>`
   }
 
   _handleRectClick(event) {
@@ -209,14 +262,10 @@ export class GrampsjsGallery extends GrampsjsAppStateMixin(LitElement) {
   }
 
   _handleClick(i) {
-    if (!this.edit) {
-      const lightBoxView = this.shadowRoot.getElementById(
-        'gallery-lightbox-view'
-      )
-      if (lightBoxView) {
-        this._lightboxSelected = i
-        lightBoxView.open()
-      }
+    const lightBoxView = this.shadowRoot.getElementById('gallery-lightbox-view')
+    if (lightBoxView) {
+      this._lightboxSelected = i
+      lightBoxView.open()
     }
   }
 

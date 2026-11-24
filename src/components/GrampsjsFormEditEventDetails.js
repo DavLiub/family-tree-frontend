@@ -9,7 +9,7 @@ import './GrampsjsFormSelectObjectList.js'
 
 import {GrampsjsObjectForm} from './GrampsjsObjectForm.js'
 
-class GrampsjsFormEditEventDetails extends GrampsjsObjectForm {
+export class GrampsjsFormEditEventDetails extends GrampsjsObjectForm {
   static get properties() {
     return {
       place: {type: Object},

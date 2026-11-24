@@ -9,6 +9,8 @@ import {
 } from '@mdi/js'
 
 import './GrampsjsIcon.js'
+import {GrampsjsAppStateMixin} from '../mixins/GrampsjsAppStateMixin.js'
+import './GrampsjsFormGender.js'
 import {sharedStyles} from '../SharedStyles.js'
 import {fireEvent} from '../util.js'
 
@@ -19,7 +21,7 @@ const icons = {
   3: mdiGenderNonBinary,
 }
 
-export class GrampsjsEditGender extends LitElement {
+export class GrampsjsEditGender extends GrampsjsAppStateMixin(LitElement) {
   static get styles() {
     return [sharedStyles]
   }
@@ -28,6 +30,7 @@ export class GrampsjsEditGender extends LitElement {
     return {
       gender: {type: Number},
       edit: {type: Boolean},
+      dialogContent: {state: true},
     }
   }
 
@@ -35,25 +38,47 @@ export class GrampsjsEditGender extends LitElement {
     super()
     this.gender = 2 // unknown
     this.edit = false
+    this.dialogContent = ''
   }
 
   render() {
-    if (!this.edit) {
+    if (!this.edit && !this.appState.permissions?.canEdit) {
       return ''
     }
     return html`
-      <md-icon-button @click="${this._handleClick}" class="edit">
+      <md-icon-button
+        @click="${this._handleClick}"
+        class="edit"
+        aria-label="${this._('Edit gender')}"
+        title="${this._('Edit gender')}"
+      >
         <grampsjs-icon path="${icons[this.gender]}"></grampsjs-icon>
       </md-icon-button>
+      ${this.dialogContent}
     `
   }
 
   _handleClick() {
-    const cycle = {0: 1, 1: 2, 2: 3, 3: 0}
-    fireEvent(this, 'edit:action', {
-      action: 'updateProp',
-      data: {gender: cycle[this.gender] ?? 0},
-    })
+    this.dialogContent = html`<grampsjs-form-gender
+      awaitSave
+      dialogTitle="${this._('Edit gender')}"
+      .appState="${this.appState}"
+      .data="${{gender: this.gender}}"
+      @object:save="${e => {
+        e.stopPropagation()
+        fireEvent(this, 'edit:action', {
+          action: 'updateProp',
+          data: e.detail.data,
+          complete: e.detail.complete,
+        })
+      }}"
+      @object:saved="${() => {
+        this.dialogContent = ''
+      }}"
+      @object:cancel="${() => {
+        this.dialogContent = ''
+      }}"
+    ></grampsjs-form-gender>`
   }
 }
 

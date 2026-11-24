@@ -1,4 +1,4 @@
-import {html} from 'lit'
+import {css, html} from 'lit'
 import {classMap} from 'lit/directives/class-map.js'
 
 import '@material/mwc-button'
@@ -12,6 +12,18 @@ import './GrampsjsName.js'
 import './GrampsjsObjectForm.js'
 
 export class GrampsjsNames extends GrampsjsEditableList {
+  static get styles() {
+    return [
+      ...super.styles,
+      css`
+        .display-name-action {
+          max-inline-size: min(12rem, 38vw);
+          text-wrap: wrap;
+        }
+      `,
+    ]
+  }
+
   static get properties() {
     return {
       data: {type: Array},
@@ -30,13 +42,17 @@ export class GrampsjsNames extends GrampsjsEditableList {
     this.dialogTitle = ''
     this._saveStatus = ''
     this.hasEdit = true
-    this.hasReorder = true
+    this.hasReorder = false
+    this.hasAdd = false
   }
 
   render() {
-    return html`${super.render()}<span role="status" aria-live="polite"
-        >${this._saveStatus}</span
-      >`
+    return html`${super.render()}
+      ${this.appState.permissions?.canEdit
+        ? html`<md-text-button @click="${this._handleAdd}">
+            ${this._('Add another name')}
+          </md-text-button>`
+        : ''} <span role="status" aria-live="polite">${this._saveStatus}</span>`
   }
 
   row(obj, i) {
@@ -53,10 +69,29 @@ export class GrampsjsNames extends GrampsjsEditableList {
               }
             }}"
           >
+            <span slot="supporting-text"
+              >${this._(i === 0 ? 'Displayed name' : 'Other name')}</span
+            >
             <grampsjs-name
+              compact
               .appState="${this.appState}"
               .data="${obj}"
             ></grampsjs-name>
+            ${this._renderRowEdit(i, 'Edit name')}
+            ${i > 0 && this.appState.permissions?.canEdit
+              ? html`<md-text-button
+                  slot="end"
+                  class="display-name-action"
+                  @click="${e => {
+                    e.stopPropagation()
+                    fireEvent(this, 'edit:action', {
+                      action: 'makePrimaryName',
+                      index: i,
+                    })
+                  }}"
+                  >${this._('Show this name on the card')}</md-text-button
+                >`
+              : ''}
           </md-list-item>
         `}`
   }
@@ -66,6 +101,7 @@ export class GrampsjsNames extends GrampsjsEditableList {
     this.dialogContent = html`
       <grampsjs-form-edit-name
         id="name"
+        .data=${{type: 'Also Known As'}}
         @object:save="${this._handleNameAdd}"
         @object:cancel="${this._handleNameCancel}"
         @object:saved="${this._handleNameSaved}"

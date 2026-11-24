@@ -67,6 +67,8 @@ export class GrampsjsObjectForm extends GrampsjsAppStateMixin(LitElement) {
       // discard the dialog themselves and may keep it open after a save
       noReset: {type: Boolean},
       saving: {type: Boolean},
+      awaitSave: {type: Boolean},
+      errorMessage: {type: String},
     }
   }
 
@@ -86,6 +88,25 @@ export class GrampsjsObjectForm extends GrampsjsAppStateMixin(LitElement) {
     this.hideCancelButton = false
     this.noReset = false
     this.saving = false
+    this.awaitSave = false
+    this.errorMessage = ''
+  }
+
+  connectedCallback() {
+    let opener = document.activeElement
+    while (opener?.shadowRoot?.activeElement) {
+      opener = opener.shadowRoot.activeElement
+    }
+    this._opener = opener
+    super.connectedCallback()
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback()
+    const opener = this._opener
+    queueMicrotask(() => {
+      if (opener?.isConnected) opener.focus()
+    })
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -149,7 +170,15 @@ export class GrampsjsObjectForm extends GrampsjsAppStateMixin(LitElement) {
       >
         <div slot="headline">${this.dialogTitle}</div>
         <div slot="content" @formdata:changed="${this._handleFormData}">
-          ${this.dialogIsOpen ? this.renderForm() : ''}
+          <div ?inert=${this.saving} aria-busy=${this.saving}>
+            ${this.dialogIsOpen ? this.renderForm() : ''}
+          </div>
+          <span role="status" aria-live="polite"
+            >${this.saving ? this._('Saving...') : ''}</span
+          >
+          ${this.errorMessage
+            ? html`<p role="alert">${this.errorMessage}</p>`
+            : ''}
         </div>
         <div slot="actions">
           <md-text-button
@@ -173,6 +202,21 @@ export class GrampsjsObjectForm extends GrampsjsAppStateMixin(LitElement) {
   }
 
   _handleDialogSave() {
+    if (this.saving) return
+    if (this.awaitSave) {
+      this.submitSave(
+        () =>
+          new Promise(resolve => {
+            fireEvent(this, 'object:save', {
+              data: structuredClone(this.data),
+              complete: resolve,
+            })
+          })
+      ).then(success => {
+        if (success) fireEvent(this, 'object:saved')
+      })
+      return
+    }
     fireEvent(this, 'object:save', {data: this.data})
     if (!this.noReset) this._reset()
   }
@@ -184,6 +228,7 @@ export class GrampsjsObjectForm extends GrampsjsAppStateMixin(LitElement) {
   }
 
   _handleDialogCancel() {
+    if (this.saving) return
     fireEvent(this, 'object:cancel')
     if (!this.noReset) this._reset()
   }
@@ -226,6 +271,28 @@ export class GrampsjsObjectForm extends GrampsjsAppStateMixin(LitElement) {
 
   firstUpdated() {
     this.updateTypeData()
+  }
+
+  async submitSave(save) {
+    if (this.saving) return false
+    if (!this.appState.permissions?.canEdit) {
+      this.errorMessage = this._('Editing is not allowed')
+      return false
+    }
+    this.saving = true
+    this.errorMessage = ''
+    try {
+      const result = await save()
+      if (!result || result.error || !('data' in result || 'task' in result)) {
+        throw new Error(result?.error || 'Unable to save record')
+      }
+      return true
+    } catch (error) {
+      this.errorMessage = this._(error.message || 'Unable to save record')
+      return false
+    } finally {
+      this.saving = false
+    }
   }
 
   translateTypeName(isCustom, typeKey, string) {

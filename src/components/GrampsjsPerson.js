@@ -9,9 +9,12 @@ import {
   mdiSearchWeb,
   mdiTimelineOutline,
   mdiMap,
+  mdiPencil,
 } from '@mdi/js'
 import {GrampsjsObject} from './GrampsjsObject.js'
 import {getSymbols} from '../symbols.js'
+import {getSummaryEvent} from './personEventEdit.js'
+import {renderContextEventEditor} from './GrampsjsFormContextEvent.js'
 import './GrampsjsImg.js'
 import './GrampsjsEditGender.js'
 import './GrampsjsPersonRelationship.js'
@@ -106,6 +109,7 @@ export class GrampsjsPerson extends GrampsjsObject {
     return html`
       <h2>
         <grampsjs-edit-gender
+          .appState=${this.appState}
           ?edit="${this.edit}"
           gender="${this.data.gender}"
         ></grampsjs-edit-gender>
@@ -192,6 +196,7 @@ export class GrampsjsPerson extends GrampsjsObject {
         <i>${birthSymbol}</i>
         ${obj.date || ''} ${obj.place ? this._('in') : ''}
         ${obj.place_name || obj.place || ''}
+        ${this._renderSummaryEventEdit('birth')}
       </span>
     `
   }
@@ -207,8 +212,39 @@ export class GrampsjsPerson extends GrampsjsObject {
         <i>${deathSymbol}</i>
         ${obj.date || ''} ${obj.place ? this._('in') : ''}
         ${obj.place_name || obj.place || ''}
+        ${this._renderSummaryEventEdit('death')}
       </span>
     `
+  }
+
+  _renderSummaryEventEdit(kind) {
+    const event = getSummaryEvent(this.data, kind)
+    if (!event || !this.appState.permissions?.canEdit || this.preview) return ''
+    const label = this._(
+      kind === 'birth' ? 'Edit birth details' : 'Edit death details'
+    )
+    return html`<md-icon-button
+      aria-label=${label}
+      title=${label}
+      @click=${() => this._editSummaryEvent(event)}
+    >
+      <grampsjs-icon
+        path=${mdiPencil}
+        color="var(--mdc-theme-secondary)"
+      ></grampsjs-icon>
+    </md-icon-button>`
+  }
+
+  _editSummaryEvent(event) {
+    if (!this.appState.permissions?.canEdit) return
+    this.dialogContent = renderContextEventEditor(
+      this.appState,
+      event,
+      this._('Edit event'),
+      () => {
+        this.dialogContent = ''
+      }
+    )
   }
 
   _renderRelation() {
@@ -466,7 +502,11 @@ export class GrampsjsPerson extends GrampsjsObject {
   }
 
   renderSectionContent(sectionKey) {
-    if (sectionKey !== 'events' || this.edit) {
+    if (
+      sectionKey !== 'events' ||
+      this.edit ||
+      this._addedSections.includes('events')
+    ) {
       return super.renderSectionContent(sectionKey)
     }
 

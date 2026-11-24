@@ -36,6 +36,7 @@ export class GrampsjsAssociations extends GrampsjsEditableList {
           path="${mdiAccount}"
           color="var(--grampsjs-color-icon)"
         ></grampsjs-icon>
+        ${this._renderRowEdit(i, 'Edit association')}
       </md-list-item>
     `
   }
@@ -54,6 +55,8 @@ export class GrampsjsAssociations extends GrampsjsEditableList {
   _handleAdd() {
     this.dialogContent = html`
       <grampsjs-form-edit-association
+        awaitSave
+        @object:saved="${this._handleDialogCancel}"
         new
         @object:save="${this._handleAssocSave}"
         @object:cancel="${this._handleDialogCancel}"
@@ -64,10 +67,12 @@ export class GrampsjsAssociations extends GrampsjsEditableList {
   }
 
   _handleEdit() {
-    const data = this.data[this._selectedIndex]
+    const data = structuredClone(this.data[this._selectedIndex])
     const person = this.extended[this._selectedIndex]
     this.dialogContent = html`
       <grampsjs-form-edit-association
+        awaitSave
+        @object:saved="${this._handleDialogCancel}"
         @object:save="${this._handleAssocSaveEdit}"
         @object:cancel="${this._handleDialogCancel}"
         .appState="${this.appState}"
@@ -88,22 +93,22 @@ export class GrampsjsAssociations extends GrampsjsEditableList {
   _handleAssocSave(e) {
     fireEvent(this, 'edit:action', {
       action: 'addAssociation',
+      complete: e.detail.complete,
       data: e.detail.data,
     })
     e.preventDefault()
     e.stopPropagation()
-    this.dialogContent = ''
   }
 
   _handleAssocSaveEdit(e) {
     fireEvent(this, 'edit:action', {
       action: 'updateAssociation',
+      complete: e.detail.complete,
       data: e.detail.data,
       index: this._selectedIndex,
     })
     e.preventDefault()
     e.stopPropagation()
-    this.dialogContent = ''
   }
 
   _handleDialogCancel() {

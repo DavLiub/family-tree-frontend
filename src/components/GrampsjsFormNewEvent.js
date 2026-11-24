@@ -11,6 +11,8 @@ export class GrampsjsFormNewEvent extends GrampsjsNewObjectTagsMixin(
   static get properties() {
     return {
       defaultRole: {type: String},
+      compact: {type: Boolean},
+      initialType: {type: String},
     }
   }
 
@@ -18,6 +20,8 @@ export class GrampsjsFormNewEvent extends GrampsjsNewObjectTagsMixin(
     super()
     this.data = {_class: 'Event'}
     this.defaultRole = 'Primary'
+    this.compact = false
+    this.initialType = ''
   }
 
   _renderCitationForm() {
@@ -33,10 +37,8 @@ export class GrampsjsFormNewEvent extends GrampsjsNewObjectTagsMixin(
     `
   }
 
-  renderForm() {
+  _renderAdditionalEventFields() {
     return html`
-      ${super.renderForm()}
-
       <grampsjs-form-select-type
         required
         id="event-role-type"
@@ -50,6 +52,12 @@ export class GrampsjsFormNewEvent extends GrampsjsNewObjectTagsMixin(
       >
       </grampsjs-form-select-type>
     `
+  }
+
+  get isValid() {
+    return (
+      Boolean(this.data.type || this.initialType) && this._areDateSelectValid()
+    )
   }
 
   checkFormValidity() {
