@@ -7,11 +7,13 @@ import {mdiLinkOff, mdiLinkPlus, mdiPencil, mdiPlus} from '@mdi/js'
 import {fireEvent, objectIconPath} from '../util.js'
 import './GrampsjsIcon.js'
 import './GrampsjsObjectLink.js'
-import './GrampsjsFormEditFamily.js'
+import './GrampsjsFormFamilyContext.js'
+import '@material/web/button/outlined-button.js'
 import './GrampsjsFormNewPerson.js'
-import './GrampsjsFormPersonRef.js'
 import {GrampsjsObject} from './GrampsjsObject.js'
 import {getSymbols} from '../symbols.js'
+import {getSummaryEvent} from './personEventEdit.js'
+import {renderContextEventEditor} from './GrampsjsFormContextEvent.js'
 
 export class GrampsjsFamily extends GrampsjsObject {
   static get styles() {
@@ -80,6 +82,11 @@ export class GrampsjsFamily extends GrampsjsObject {
       ${this._renderParent('father', this._parentLabel('father'))}
       ${this._renderParent('mother', this._parentLabel('mother'))}
       ${this._renderMarriageBlock()}
+      ${this.appState.permissions?.canEdit
+        ? html` <md-outlined-button @click=${this._handleEditFamily}>
+            ${this._('Edit family relationships')}
+          </md-outlined-button>`
+        : ''}
     `
   }
 
@@ -150,6 +157,28 @@ export class GrampsjsFamily extends GrampsjsObject {
           </dd>
         </div>
       </dl>
+      ${this.appState.permissions?.canEdit
+        ? ['marriage', 'divorce'].map(kind => {
+            const event = getSummaryEvent(this.data, kind)
+            if (!event) return ''
+            const title = this._(
+              kind === 'marriage' ? 'Edit marriage event' : 'Edit divorce event'
+            )
+            return html`<md-outlined-button
+              @click=${() => {
+                this.dialogContent = renderContextEventEditor(
+                  this.appState,
+                  event,
+                  title,
+                  () => {
+                    this.dialogContent = ''
+                  }
+                )
+              }}
+              >${title}</md-outlined-button
+            >`
+          })
+        : ''}
     `
   }
 
@@ -252,38 +281,40 @@ export class GrampsjsFamily extends GrampsjsObject {
     `
   }
 
-  _handleParentShare(parent) {
-    this.dialogContent = html`
-      <grampsjs-form-personref
-        @object:save="${e => this._handleParentChanged(e, parent)}"
-        @object:cancel="${this._handleCancelDialog}"
-        .appState="${this.appState}"
-        dialogTitle="${this._('Select an existing person')}"
-      >
-      </grampsjs-form-personref>
-    `
+  _handleParentShare() {
+    this._handleEditFamily()
   }
 
   _handleParentChanged(e, parent) {
-    const handle = e.detail.data?.ref ?? ''
-    const updatedFamily = {[`${parent}_handle`]: handle}
-    fireEvent(this, 'edit:action', {action: 'updateProp', data: updatedFamily})
-    this.dialogContent = ''
+    this._openFamilyContext(this.data[`${parent}_handle`], true)
   }
 
   _handleEditFamily() {
-    const data = {
-      type: this.data?.type?.string || this.data.type,
-    }
+    this._openFamilyContext()
+  }
 
+  _openFamilyContext(personHandle = '', disconnect = false) {
+    if (!this.appState.permissions?.canEdit) return
     this.dialogContent = html`
-      <grampsjs-form-edit-family
-        @object:save="${this._handleSaveDetails}"
-        @object:cancel="${this._handleCancelDialog}"
-        .appState="${this.appState}"
-        .data=${data}
-      >
-      </grampsjs-form-edit-family>
+      <grampsjs-form-family-context
+        .family=${this.data}
+        .appState=${this.appState}
+        .personHandle=${personHandle}
+        .familyLabel=${[this.data.profile?.father, this.data.profile?.mother]
+          .map(person =>
+            [person?.name_given, person?.name_surname].filter(Boolean).join(' ')
+          )
+          .filter(Boolean)
+          .join(' / ')}
+        ?disconnect=${disconnect}
+        dialogTitle=${this._(
+          disconnect
+            ? 'Disconnect from this family'
+            : 'Edit family relationships'
+        )}
+        @object:saved=${this._handleCancelDialog}
+        @object:cancel=${this._handleCancelDialog}
+      ></grampsjs-form-family-context>
     `
   }
 
@@ -296,13 +327,6 @@ export class GrampsjsFamily extends GrampsjsObject {
       action: 'newParent',
       data,
     })
-    e.preventDefault()
-    e.stopPropagation()
-    this.dialogContent = ''
-  }
-
-  _handleSaveDetails(e) {
-    fireEvent(this, 'edit:action', {action: 'updateProp', data: e.detail.data})
     e.preventDefault()
     e.stopPropagation()
     this.dialogContent = ''
