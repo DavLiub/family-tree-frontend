@@ -153,7 +153,7 @@ const _allTabs = {
   },
   references: {
     title: 'References',
-    condition: data => Object.keys(data?.backlinks)?.length > 0,
+    condition: data => Object.keys(data?.backlinks || {}).length > 0,
     conditionEdit: data => false,
   },
   revisions: {

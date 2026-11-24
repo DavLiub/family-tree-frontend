@@ -2,7 +2,6 @@ import {describe, expect, it, vi} from 'vitest'
 import {GrampsjsFormContextEvent} from '../../src/components/GrampsjsFormContextEvent.js'
 import {GrampsjsFormContextNote} from '../../src/components/GrampsjsFormContextNote.js'
 import {GrampsjsEvents} from '../../src/components/GrampsjsEvents.js'
-import {GrampsjsEditor} from '../../src/components/GrampsjsEditor.js'
 
 function state(record, apiPut) {
   return {
@@ -16,7 +15,7 @@ function state(record, apiPut) {
 
 describe('context event and note updates', () => {
   it('never routes an embedded note save to the enclosing person', () => {
-    const editor = new GrampsjsEditor()
+    const editor = document.createElement('grampsjs-editor')
     editor.localSave = true
     editor.data = {string: 'Synthetic note draft'}
     const actions = vi.fn()
