@@ -1308,6 +1308,14 @@ class GrampsjsEditor extends GrampsjsAppStateMixin(LitElement) {
     clearDraftsWithPrefix(this._getStorageKeyPrefix())
   }
 
+  discardDraft() {
+    if (this._draftSaveTimer) {
+      clearTimeout(this._draftSaveTimer)
+      this._draftSaveTimer = null
+    }
+    clearDraft(this._getStorageKey())
+  }
+
   connectedCallback() {
     super.connectedCallback()
     if (!this.localSave) {

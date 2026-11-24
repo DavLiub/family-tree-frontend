@@ -1135,20 +1135,34 @@ export class GrampsjsViewObject extends GrampsjsView {
       `/api/${objectTypeToEndpoint[this._className]}/${this._data.handle}`
     )
     if (!latest?.data || latest.error) {
-      return latest || {error: 'Unable to load record'}
+      return {
+        error:
+          'The record was created but could not be attached. Save again to retry.',
+      }
     }
     if (latest.data.handle !== this._data.handle)
       return {error: 'Record not found'}
-    return this._updateObject(latest.data, this._className, owner => {
-      const refs = owner[property] || []
-      const attached = refs.some(ref =>
-        typeof ref === 'string'
-          ? ref === record.handle
-          : ref.ref === record.handle
-      )
-      if (!attached) owner[property] = [...refs, reference(record.handle)]
-      return owner
-    })
+    const attached = await this._updateObject(
+      latest.data,
+      this._className,
+      owner => {
+        const refs = owner[property] || []
+        const attached = refs.some(ref =>
+          typeof ref === 'string'
+            ? ref === record.handle
+            : ref.ref === record.handle
+        )
+        if (!attached) owner[property] = [...refs, reference(record.handle)]
+        return owner
+      }
+    )
+    if (attached.error) {
+      return {
+        error:
+          'The record was created but could not be attached. Save again to retry.',
+      }
+    }
+    return attached
   }
 
   async _postObject(obj, objType) {

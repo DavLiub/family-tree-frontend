@@ -107,7 +107,8 @@ describe('explicit card choices', () => {
       data: {handle: 'synthetic-new-note', text: {string: 'Synthetic note'}},
     }
     expect(await person.handleEditAction({detail})).toEqual({
-      error: 'Synthetic attachment failure',
+      error:
+        'The record was created but could not be attached. Save again to retry.',
     })
     expect(await person.handleEditAction({detail})).toEqual({data: []})
     expect(person.appState.apiPost).toHaveBeenCalledTimes(1)

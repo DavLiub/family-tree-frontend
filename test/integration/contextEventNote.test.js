@@ -2,6 +2,7 @@ import {describe, expect, it, vi} from 'vitest'
 import {GrampsjsFormContextEvent} from '../../src/components/GrampsjsFormContextEvent.js'
 import {GrampsjsFormContextNote} from '../../src/components/GrampsjsFormContextNote.js'
 import {GrampsjsEvents} from '../../src/components/GrampsjsEvents.js'
+import {GrampsjsEditor} from '../../src/components/GrampsjsEditor.js'
 
 function state(record, apiPut) {
   return {
@@ -14,6 +15,16 @@ function state(record, apiPut) {
 }
 
 describe('context event and note updates', () => {
+  it('never routes an embedded note save to the enclosing person', () => {
+    const editor = new GrampsjsEditor()
+    editor.localSave = true
+    editor.data = {string: 'Synthetic note draft'}
+    const actions = vi.fn()
+    editor.addEventListener('edit:action', actions)
+    editor._handleSaveButton()
+    expect(actions).not.toHaveBeenCalled()
+    expect(editor.data.string).toBe('Synthetic note draft')
+  })
   it('presets a common event and reuses its identity when attachment is retried', () => {
     const events = new GrampsjsEvents()
     events.appState = {permissions: {canEdit: true}, i18n: {strings: {}}}
