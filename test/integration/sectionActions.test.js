@@ -149,9 +149,8 @@ it('places name creation above rows and confirms removal without a global mode',
     {first_name: 'Alex', type: 'Married Name'},
     {first_name: 'Alex', type: 'Birth Name'},
   ]
-  document.body.append(names)
-  await names.updateComplete
-  const root = names.renderRoot
+  // Keep the dialog disconnected: happy-dom has no Web Animations API.
+  const root = mount(names)
   expect(root.querySelector('.section-create-actions + md-list')).not.toBeNull()
   expect(
     button(root, 'Add another name').querySelector('[slot="icon"]')
@@ -161,11 +160,11 @@ it('places name creation above rows and confirms removal without a global mode',
   const action = vi.fn()
   names.addEventListener('edit:action', action)
   remove[0].dispatchEvent(new MouseEvent('click', {bubbles: true}))
-  await names.updateComplete
+  render(names.render(), root, {host: names})
   expect(root.querySelector('md-dialog')).not.toBeNull()
   expect(action).not.toHaveBeenCalled()
   button(root, 'Cancel').click()
-  await names.updateComplete
+  render(names.render(), root, {host: names})
   expect(root.querySelector('md-dialog')).toBeNull()
   expect(names.edit).toBe(false)
 })
