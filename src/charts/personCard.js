@@ -1,4 +1,5 @@
 import {local, select} from 'd3-selection'
+import {getPersonNameDisplay} from '../components/nameHistory.js'
 import {chartNameDisplayFormat, fireEvent} from '../util.js'
 import {
   appendAddPersonButton,
@@ -39,6 +40,7 @@ export function appendPersonCard(
   nodes,
   {
     profile,
+    person = () => undefined,
     imageUrl = () => '',
     boxWidth = 190,
     boxHeight = 90,
@@ -67,13 +69,26 @@ export function appendPersonCard(
 
   nodes
     .append('rect')
-    .attr('fill', palette.personBox)
+    .attr(
+      'fill',
+      d =>
+        `color-mix(in srgb, ${
+          palette.sex[profile(d)?.sex] ?? palette.sex.U
+        } 22%, ${palette.personBox})`
+    )
     .attr('x', left)
     .attr('y', top)
     .attr('width', boxWidth)
     .attr('height', boxHeight)
     .attr('rx', 8)
     .attr('ry', 8)
+
+  const birthName = d =>
+    getPersonNameDisplay(person(d) || {}, () => '').birth.replace(/^: /, '')
+  nodes.append('title').text(d => {
+    const main = getPersonNameDisplay(person(d) || {profile: profile(d)}).main
+    return birthName(d) ? `${main} (${birthName(d)})` : main
+  })
 
   const surnameFirst =
     nameDisplayFormat === chartNameDisplayFormat.surnameThenGiven
@@ -106,13 +121,26 @@ export function appendPersonCard(
       .filter(d => line.show(profile(d)))
       .append('text')
       .attr('x', d => left + textPadding(d))
-      .attr('y', top + 25 + 17 * i)
+      .attr(
+        'y',
+        d => top + (birthName(d) ? 16 + 15 * (i > 1 ? i + 1 : i) : 25 + 17 * i)
+      )
       .attr('text-anchor', 'start')
       .attr('font-weight', line.weight)
       .attr('fill', palette.text)
       .attr('paint-order', 'stroke')
       .text(d => clipString(line.text(profile(d)), boxWidth - textPadding(d)))
   })
+
+  nodes
+    .filter(d => birthName(d))
+    .append('text')
+    .attr('class', 'birth-name')
+    .attr('x', d => left + textPadding(d))
+    .attr('y', top + 46)
+    .attr('font-size', 11)
+    .attr('fill', palette.text)
+    .text(d => clipString(`(${birthName(d)})`, boxWidth - textPadding(d)))
 
   nodes
     .filter(d => imageUrl(d))
@@ -240,6 +268,7 @@ export function drawChangedCards(
   cards.selectChildren().remove()
   appendPersonCard(cards, {
     profile: d => d.person?.profile,
+    person: d => d.person,
     imageUrl: getImageUrl,
     boxWidth,
     boxHeight,
