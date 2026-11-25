@@ -71,10 +71,11 @@ class GrampsjsTreeChart extends GrampsjsChartBase {
     return html`
       <div
         @pedigree:show-children="${this._openMenu}"
+        @person:photo-edit=${this._openPersonPhoto}
         style="position:relative;"
       >
         <div id="container"></div>
-        ${this.renderRelativesMenu()}
+        ${this.renderRelativesMenu()} ${this.renderPhotoDialog()}
       </div>
     `
   }
@@ -142,6 +143,8 @@ class GrampsjsTreeChart extends GrampsjsChartBase {
       nameDisplayFormat: this.nameDisplayFormat,
       ...getSymbols(this.appState.settings, s => this._(s)),
       canEdit: this.canEdit,
+      canEditPhoto: this.appState.permissions?.canEdit,
+      photoLabel: this._('Add or change photo'),
       duration: chartTransitionDuration(),
     })
   }

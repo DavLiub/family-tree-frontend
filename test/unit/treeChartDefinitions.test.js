@@ -65,7 +65,7 @@ describe('chart definitions', () => {
       {name: 'DegreesOfSeparation', values: ['I1', 3]},
     ])
     expect(extendOf(url)).toBe(
-      'event_ref_list,primary_parent_family,family_list,parent_family_list'
+      'event_ref_list,primary_parent_family,family_list,media_list,parent_family_list'
     )
     expect(url).toContain('locale=de')
   })

@@ -573,5 +573,16 @@
     "Unable to check record usage": "Не удалось проверить, где используется запись",
     "Record usage changed. Review the list and confirm again.": "Связи записи изменились. Проверьте список и подтвердите ещё раз.",
     "Unable to delete record": "Не удалось удалить запись",
-    "Full record usage requires permission to view private records": "Для проверки всех связей нужно право просмотра приватных записей"
+    "Full record usage requires permission to view private records": "Для проверки всех связей нужно право просмотра приватных записей",
+    "Add or change photo": "Добавить или изменить фото",
+    "Person photo": "Фото человека",
+    "Upload person photo": "Загрузка фото человека",
+    "Upload new photo": "Загрузить новое фото",
+    "Choose from this person’s photos": "Выбрать из фотографий этого человека",
+    "The selected photo becomes the main photo of this person.": "Выбранное фото станет главным фото этого человека.",
+    "This person has no photos yet.": "У этого человека пока нет фотографий.",
+    "This photo is no longer attached to the person": "Это фото больше не связано с человеком",
+    "Choose an image file": "Выберите файл изображения",
+    "Unable to upload photo": "Не удалось загрузить фото",
+    "The photo was uploaded but could not be attached. Save again to retry.": "Фото загружено, но не удалось прикрепить его к человеку. Нажмите «Сохранить» ещё раз."
 }

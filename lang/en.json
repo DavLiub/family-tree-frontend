@@ -572,5 +572,16 @@
   "Unable to check record usage": "Unable to check record usage",
   "Record usage changed. Review the list and confirm again.": "Record usage changed. Review the list and confirm again.",
   "Unable to delete record": "Unable to delete record",
-  "Full record usage requires permission to view private records": "Full record usage requires permission to view private records"
+  "Full record usage requires permission to view private records": "Full record usage requires permission to view private records",
+  "Add or change photo": "Add or change photo",
+  "Person photo": "Person photo",
+  "Upload person photo": "Upload person photo",
+  "Upload new photo": "Upload new photo",
+  "Choose from this person’s photos": "Choose from this person’s photos",
+  "The selected photo becomes the main photo of this person.": "The selected photo becomes the main photo of this person.",
+  "This person has no photos yet.": "This person has no photos yet.",
+  "This photo is no longer attached to the person": "This photo is no longer attached to the person",
+  "Choose an image file": "Choose an image file",
+  "Unable to upload photo": "Unable to upload photo",
+  "The photo was uploaded but could not be attached. Save again to retry.": "The photo was uploaded but could not be attached. Save again to retry."
 }

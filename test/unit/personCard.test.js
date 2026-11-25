@@ -193,6 +193,18 @@ describe('appendPersonCard', () => {
     expect(full.querySelector('text').getAttribute('fill')).toBe('black')
   })
 
+  it('reserves the same photo space for images and sex-specific placeholders', () => {
+    const cards = renderCards()
+    const male = cards.noSurname.querySelector('.photo-placeholder path')
+    const female = cards.full.querySelector('.photo-placeholder path')
+    const neutral = cards.longName.querySelector('.photo-placeholder path')
+    expect(male.getAttribute('d')).not.toBe(female.getAttribute('d'))
+    expect(neutral.getAttribute('d')).not.toBe(male.getAttribute('d'))
+    expect(cards.full.querySelector('text').getAttribute('x')).toBe(
+      cards.noGiven.querySelector('text').getAttribute('x')
+    )
+  })
+
   it('draws images with unique pattern ids', () => {
     const first = renderCards().noGiven
     const second = renderCards().noGiven
@@ -204,7 +216,9 @@ describe('appendPersonCard', () => {
       first.querySelector('pattern image').getAttributeNS(XLINK, 'href')
     ).toBe('https://example.org/doe.jpg')
     expect(patternId(first)).not.toBe(patternId(second))
-    expect(renderCards().full.querySelector('circle')).toBeNull()
+    expect(
+      renderCards().full.querySelector('.photo-placeholder')
+    ).not.toBeNull()
   })
 
   it('selects the person on click', () => {

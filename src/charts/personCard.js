@@ -1,3 +1,5 @@
+import {mdiAccount, mdiFaceMan, mdiFaceWoman} from '@mdi/js'
+import {updatePhotoButtons} from './photoButton.js'
 import {local, select} from 'd3-selection'
 import {getPersonNameDisplay} from '../components/nameHistory.js'
 import {chartNameDisplayFormat, fireEvent} from '../util.js'
@@ -53,9 +55,8 @@ export function appendPersonCard(
 ) {
   const left = -boxWidth / 2
   const top = -boxHeight / 2
-  const imgRadius = (boxHeight - imgPadding * 2) / 2
-  const textPadding = d =>
-    imageUrl(d) ? 2 * imgRadius + 2 * imgPadding : 2 * imgPadding
+  const imgRadius = Math.min(30, (boxHeight - imgPadding * 2) / 2)
+  const textPadding = () => 2 * imgRadius + 2 * imgPadding
 
   nodes
     .append('rect')
@@ -129,7 +130,12 @@ export function appendPersonCard(
       .attr('font-weight', line.weight)
       .attr('fill', palette.text)
       .attr('paint-order', 'stroke')
-      .text(d => clipString(line.text(profile(d)), boxWidth - textPadding(d)))
+      .text(d =>
+        clipString(
+          line.text(profile(d)),
+          boxWidth - textPadding(d) - (i < 2 ? 44 : 10)
+        )
+      )
   })
 
   nodes
@@ -141,6 +147,26 @@ export function appendPersonCard(
     .attr('font-size', 11)
     .attr('fill', palette.text)
     .text(d => clipString(`(${birthName(d)})`, boxWidth - textPadding(d)))
+
+  const placeholders = nodes
+    .filter(d => !imageUrl(d))
+    .append('g')
+    .attr('class', 'photo-placeholder')
+    .attr('transform', `translate(${left + imgPadding}, ${-imgRadius})`)
+  placeholders
+    .append('circle')
+    .attr('cx', imgRadius)
+    .attr('cy', imgRadius)
+    .attr('r', imgRadius)
+    .attr('fill', palette.personBox)
+  placeholders
+    .append('path')
+    .attr(
+      'd',
+      d => ({M: mdiFaceMan, F: mdiFaceWoman}[profile(d)?.sex] || mdiAccount)
+    )
+    .attr('transform', `translate(8,8) scale(${(imgRadius * 2 - 16) / 24})`)
+    .attr('fill', palette.sex ? palette.text : 'currentColor')
 
   nodes
     .filter(d => imageUrl(d))
@@ -157,12 +183,13 @@ export function appendPersonCard(
         .append('image')
         .attr('width', 2 * imgRadius)
         .attr('height', 2 * imgRadius)
+        .attr('preserveAspectRatio', 'xMidYMid slice')
         .attr('xlink:href', imageUrl(d))
       node
         .append('circle')
         .attr('r', imgRadius)
         .attr('cx', left + imgPadding + imgRadius)
-        .attr('cy', top + imgPadding + imgRadius)
+        .attr('cy', 0)
         .attr('fill', `url(#${patternId})`)
     })
 }
@@ -283,12 +310,28 @@ export function drawChangedCards(
 // have a `person` and a `handle`, or removes them without `interactive`
 export function updatePersonCardInteraction(
   nodes,
-  {interactive, canEdit, palette = chartPalette, boxWidth, boxHeight}
+  {
+    interactive,
+    canEdit,
+    canEditPhoto = false,
+    photoLabel = 'Add photo',
+    palette = chartPalette,
+    boxWidth,
+    boxHeight,
+  }
 ) {
   if (!interactive) {
     clearPersonCardInteraction(nodes)
     return
   }
+  updatePhotoButtons(nodes, {
+    canEditPhoto,
+    photoLabel,
+    handle: d => d.person?.handle,
+    boxWidth,
+    boxHeight,
+    palette,
+  })
   setPersonCardInteraction(nodes, {
     profile: d => d.person?.profile,
     handle: d => d.handle,
@@ -305,6 +348,6 @@ export function clearPersonCardInteraction(nodes) {
   nodes
     .style('cursor', null)
     .on('click mouseenter mouseleave', null)
-    .selectAll('.add-person-btn')
+    .selectAll('.add-person-btn, .person-photo-button')
     .remove()
 }
