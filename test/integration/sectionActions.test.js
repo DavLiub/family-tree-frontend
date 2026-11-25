@@ -44,11 +44,21 @@ describe('section creation in ordinary viewing mode', () => {
         option => option.updateComplete
       )
     )
-    select.value = 'Death'
+    // Material's server-side value setter is inert in this DOM environment.
+    // Supply the control contract and exercise our change handler and reset.
+    let selectedValue = 'Death'
+    Object.defineProperty(select, 'value', {
+      configurable: true,
+      get: () => selectedValue,
+      set: value => {
+        selectedValue = value
+      },
+    })
     select.dispatchEvent(new Event('change'))
     button(root, 'Attach existing').click()
     expect(events.edit).toBe(false)
     expect(events._handleAdd).toHaveBeenCalledWith('Death')
+    expect(selectedValue).toBe('')
     expect(events._handleShare).toHaveBeenCalledTimes(1)
   })
 
