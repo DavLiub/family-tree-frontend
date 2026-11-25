@@ -2,11 +2,12 @@ import {LitElement, css, html} from 'lit'
 import {
   mdiArrowLeft,
   mdiArrowRight,
-  mdiDelete,
+  mdiLinkOff,
   mdiPencil,
   mdiStarOutline,
 } from '@mdi/js'
 
+import {renderRecordDelete} from './GrampsjsRecordDelete.js'
 import {sharedStyles} from '../SharedStyles.js'
 import './GrampsjsImg.js'
 import './GrampsjsIcon.js'
@@ -16,7 +17,10 @@ import './GrampsjsFormContextObject.js'
 import './GrampsjsFormNewMedia.js'
 import '@material/web/iconbutton/icon-button.js'
 import {fireEvent} from '../util.js'
-import {renderSectionCreateActions} from './sectionActions.js'
+import {
+  confirmSectionRemoval,
+  renderSectionCreateActions,
+} from './sectionActions.js'
 import {GrampsjsAppStateMixin} from '../mixins/GrampsjsAppStateMixin.js'
 
 export class GrampsjsGallery extends GrampsjsAppStateMixin(LitElement) {
@@ -146,9 +150,11 @@ export class GrampsjsGallery extends GrampsjsAppStateMixin(LitElement) {
           ? html`
               <div class="tile-overlay">
                 ${this._renderContextActions(i)}
-                ${this.edit && i > 0
+                ${this.appState.permissions?.canEdit && i > 0
                   ? html`
                       <md-icon-button
+                        aria-label=${this._('Move Up')}
+                        title=${this._('Move Up')}
                         @click="${e => {
                           e.stopPropagation()
                           this._handleMediaRefLeft(i)
@@ -161,9 +167,12 @@ export class GrampsjsGallery extends GrampsjsAppStateMixin(LitElement) {
                       </md-icon-button>
                     `
                   : ''}
-                ${this.edit && i < this.media.length - 1
+                ${this.appState.permissions?.canEdit &&
+                i < this.media.length - 1
                   ? html`
                       <md-icon-button
+                        aria-label=${this._('Move Down')}
+                        title=${this._('Move Down')}
                         @click="${e => {
                           e.stopPropagation()
                           this._handleMediaRefRight(i)
@@ -176,20 +185,21 @@ export class GrampsjsGallery extends GrampsjsAppStateMixin(LitElement) {
                       </md-icon-button>
                     `
                   : ''}
-                ${this.edit
+                ${this.appState.permissions?.canEdit
                   ? html`<md-icon-button
-                      aria-label="${this._('Remove from card')}"
+                      aria-label="${this._('Detach from person')}"
                       @click="${e => {
                         e.stopPropagation()
                         this._handleMediaRefDel(i)
                       }}"
                     >
                       <grampsjs-icon
-                        path="${mdiDelete}"
+                        path="${mdiLinkOff}"
                         color="var(--mdc-theme-secondary)"
                       ></grampsjs-icon>
                     </md-icon-button>`
                   : ''}
+                ${renderRecordDelete(this, 'media', this.media[i])}
               </div>
             `
           : ''}
@@ -275,7 +285,9 @@ export class GrampsjsGallery extends GrampsjsAppStateMixin(LitElement) {
   }
 
   _handleMediaRefDel(index) {
-    fireEvent(this, 'edit:action', {action: 'delMediaRef', index})
+    confirmSectionRemoval(this, () =>
+      fireEvent(this, 'edit:action', {action: 'delMediaRef', index})
+    )
   }
 
   _handleMediaRefLeft(index) {

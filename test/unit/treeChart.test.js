@@ -392,9 +392,13 @@ describe('TreeChart', () => {
     expect(
       chart.node.querySelector('#triangle-children path').getAttribute('fill')
     ).toBe('blue')
-    expect(box().getAttribute('fill')).toBe('white')
+    expect(box().getAttribute('fill')).toBe(
+      'color-mix(in srgb, var(--color-girl) 22%, white)'
+    )
     chart.update(layout, {...size, palette: {...palette, personBox: 'ivory'}})
-    expect(box().getAttribute('fill')).toBe('ivory')
+    expect(box().getAttribute('fill')).toBe(
+      'color-mix(in srgb, var(--color-girl) 22%, ivory)'
+    )
   })
 
   it('clears people and links but keeps the zoom', () => {

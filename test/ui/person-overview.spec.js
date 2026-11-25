@@ -9,6 +9,9 @@ test('person overview preserves facts, relationships, names, media, and citation
   site.personOverview()
   await site.open('/person/TEST-I0001')
   const card = personCard(page)
+  await expect(card.getByRole('button', {name: /^Edit section:/})).toHaveCount(
+    0
+  )
 
   await expect(card.locator('h2').first()).toContainText(
     'Alexandria Synthetic van Example and Sample'
@@ -27,6 +30,22 @@ test('person overview preserves facts, relationships, names, media, and citation
     .poll(() => names.evaluate(element => element.data.length))
     .toBe(2)
   await expect(names).toContainText('Synthetic Alias')
+  const addName = names.getByRole('button', {
+    name: 'Add another name',
+    exact: true,
+  })
+  await expect(addName).toBeVisible()
+  const addBox = await addName.boundingBox()
+  const listBox = await names.locator('md-list').boundingBox()
+  expect(addBox.y + addBox.height).toBeLessThanOrEqual(listBox.y + 1)
+  const removeName = names.getByRole('button', {
+    name: 'Delete name',
+    exact: true,
+  })
+  await expect(removeName).toHaveCount(1)
+  await removeName.click()
+  await expect(names.locator('md-dialog')).toHaveJSProperty('open', true)
+  await names.getByRole('button', {name: 'Cancel', exact: true}).click()
 
   const relationships = card.locator('grampsjs-relationships')
   await expect(relationships).toContainText('Synthetic Father')
@@ -55,6 +74,12 @@ test('person section shortcuts work in Russian on a narrow viewport', async ({
   await page.setViewportSize({width: 320, height: 780})
   await site.open('/person/TEST-I0001', true, {lang: 'ru', theme: 'dark'})
   const card = personCard(page)
+  const addEvent = card.locator('grampsjs-events md-outlined-select').first()
+  await expect(addEvent).toBeVisible()
+  const selectWidth = await addEvent.evaluate(
+    element => element.getBoundingClientRect().width
+  )
+  expect(selectWidth).toBeGreaterThanOrEqual(180)
   const navigation = card.locator('nav.profile-navigation')
   const shortcuts = navigation.locator('md-outlined-button')
 

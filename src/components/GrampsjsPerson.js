@@ -567,6 +567,15 @@ export class GrampsjsPerson extends GrampsjsObject {
         .appState="${this.appState}"
         .data=${data}
         .profile=${profile}
+        .hasReorder=${false}
+        .referenceIndices=${data.map(event =>
+          (this.data.event_ref_list || []).findIndex(
+            ref => ref.ref === event.handle
+          )
+        )}
+        .eventRef=${data.map(event =>
+          (this.data.event_ref_list || []).find(ref => ref.ref === event.handle)
+        )}
       ></grampsjs-events>
     `
   }

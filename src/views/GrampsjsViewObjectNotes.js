@@ -5,6 +5,7 @@ import {mdiLinkOff, mdiPencil} from '@mdi/js'
 import '@material/web/button/text-button'
 import '@material/web/iconbutton/icon-button.js'
 
+import {renderRecordDelete} from '../components/GrampsjsRecordDelete.js'
 import {GrampsjsViewObjectsDetail} from './GrampsjsViewObjectsDetail.js'
 import '../components/GrampsjsNoteContent.js'
 import '../components/GrampsjsFormNoteRef.js'
@@ -13,7 +14,10 @@ import '../components/GrampsjsFormContextNote.js'
 import '../components/GrampsjsIcon.js'
 import '../components/GrampsjsTooltip.js'
 import {fireEvent, makeHandle} from '../util.js'
-import {renderSectionCreateActions} from '../components/sectionActions.js'
+import {
+  confirmSectionRemoval,
+  renderSectionCreateActions,
+} from '../components/sectionActions.js'
 
 const BASE_DIR = ''
 
@@ -39,6 +43,10 @@ export class GrampsjsViewObjectNotes extends GrampsjsViewObjectsDetail {
 
         div.note-edit-meta {
           margin-bottom: 1.2em;
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 4px;
         }
       `,
     ]
@@ -178,9 +186,11 @@ export class GrampsjsViewObjectNotes extends GrampsjsViewObjectsDetail {
               </md-text-button>
             `
           : ''}
-        ${this.edit
+        ${this.appState.permissions?.canEdit
           ? html`
               <md-icon-button
+                aria-label=${this._('Detach from person')}
+                title=${this._('Detach from person')}
                 @click="${() => this._handleNoteRefDel(obj.handle)}"
                 id="del-note-${obj.handle}"
               >
@@ -193,10 +203,11 @@ export class GrampsjsViewObjectNotes extends GrampsjsViewObjectsDetail {
               </md-icon-button>
               <grampsjs-tooltip
                 for="del-note-${obj.handle}"
-                content="${this._('Remove note')}"
+                content="${this._('Detach from person')}"
               ></grampsjs-tooltip>
             `
           : ''}
+        ${renderRecordDelete(this, 'notes', obj)}
       </div>
     `
   }
@@ -216,7 +227,9 @@ export class GrampsjsViewObjectNotes extends GrampsjsViewObjectsDetail {
   }
 
   _handleNoteRefDel(handle) {
-    fireEvent(this, 'edit:action', {action: 'delNoteRef', handle})
+    confirmSectionRemoval(this, () =>
+      fireEvent(this, 'edit:action', {action: 'delNoteRef', handle})
+    )
   }
 
   _handleNewNoteSave(e) {

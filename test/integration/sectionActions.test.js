@@ -1,10 +1,12 @@
 import {afterEach, describe, expect, it, vi} from 'vitest'
 import {render} from 'lit'
+import {GrampsjsNames} from '../../src/components/GrampsjsNames.js'
 import {GrampsjsPerson} from '../../src/components/GrampsjsPerson.js'
 import {GrampsjsEvents} from '../../src/components/GrampsjsEvents.js'
 import {GrampsjsUrls} from '../../src/components/GrampsjsUrls.js'
 import {GrampsjsGallery} from '../../src/components/GrampsjsGallery.js'
 import {GrampsjsViewObjectNotes} from '../../src/views/GrampsjsViewObjectNotes.js'
+import {GrampsjsViewSourceCitations} from '../../src/views/GrampsjsViewSourceCitations.js'
 import {GrampsjsRelationships} from '../../src/components/GrampsjsRelationships.js'
 
 afterEach(() => document.body.replaceChildren())
@@ -131,8 +133,77 @@ describe('section creation in ordinary viewing mode', () => {
     expect(card._getTabs(false)).not.toContain('metadata')
     card._addedSections = ['events']
     const management = mount(card, card._renderSectionManagement('events'))
-    management.querySelector('md-outlined-button').click()
-    expect(card._addedSections).not.toContain('events')
+    expect(management.querySelector('md-outlined-button')).toBeNull()
+    const content = mount(card, card.renderSectionContent('events'))
+    expect(content.querySelector('grampsjs-events').hasAttribute('edit')).toBe(
+      false
+    )
     expect(card._getTabs(false)).toContain('events')
+  })
+})
+
+it('places name creation above rows and confirms removal without a global mode', async () => {
+  const names = new GrampsjsNames()
+  names.appState = state()
+  names.data = [
+    {first_name: 'Alex', type: 'Married Name'},
+    {first_name: 'Alex', type: 'Birth Name'},
+  ]
+  // Keep the dialog disconnected: happy-dom has no Web Animations API.
+  const root = mount(names)
+  expect(root.querySelector('.section-create-actions + md-list')).not.toBeNull()
+  expect(
+    button(root, 'Add another name').querySelector('[slot="icon"]')
+  ).not.toBeNull()
+  const remove = root.querySelectorAll('[aria-label="Delete name"]')
+  expect(remove.length).toBe(1)
+  const action = vi.fn()
+  names.addEventListener('edit:action', action)
+  remove[0].dispatchEvent(new MouseEvent('click', {bubbles: true}))
+  render(names.render(), root, {host: names})
+  expect(root.querySelector('md-dialog')).not.toBeNull()
+  expect(action).not.toHaveBeenCalled()
+  button(root, 'Cancel').click()
+  render(names.render(), root, {host: names})
+  expect(root.querySelector('md-dialog')).toBeNull()
+  expect(names.edit).toBe(false)
+})
+
+it('never detaches another person or family event from the current person', () => {
+  const events = new GrampsjsEvents()
+  events.appState = state()
+  events.data = [{handle: 'own'}, {handle: 'relative'}]
+  events.eventRef = [{ref: 'own'}, undefined]
+  expect(events._canRemoveIndex(0)).toBe(true)
+  expect(events._canRemoveIndex(1)).toBe(false)
+  const action = vi.fn()
+  events.addEventListener('edit:action', action)
+  events._requestRowRemove(1)
+  expect(action).not.toHaveBeenCalled()
+  expect(events.dialogContent).toBe('')
+})
+
+it('renders citation creation for an empty section without entering editing mode', () => {
+  const citations = new GrampsjsViewSourceCitations()
+  citations.appState = state()
+  citations.loading = false
+  const root = mount(citations, citations.renderContent())
+  expect(root.querySelector('grampsjs-source-citations')).not.toBeNull()
+  expect(citations.edit).toBe(false)
+})
+
+it('maps a combined timeline row back to the native event reference', () => {
+  const events = new GrampsjsEvents()
+  events.appState = state()
+  events.data = [{handle: 'relative'}, {handle: 'own-second'}]
+  events.eventRef = [undefined, {ref: 'own-second'}]
+  events.referenceIndices = [-1, 3]
+  events._selectedIndex = 1
+  const action = vi.fn()
+  events.addEventListener('edit:action', action)
+  events._handleDelete()
+  expect(action.mock.calls[0][0].detail).toMatchObject({
+    action: 'delEvent',
+    index: 3,
   })
 })

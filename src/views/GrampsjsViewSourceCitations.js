@@ -29,6 +29,11 @@ export class GrampsjsViewSourceCitations extends GrampsjsViewObjectsDetail {
     }&profile=all&extend=all&rules=${encodeURIComponent(JSON.stringify(rules))}`
   }
 
+  renderContent() {
+    return html`${this.loading ? this.renderLoading() : this.renderElements()}
+    ${this.dialogContent}`
+  }
+
   renderElements() {
     return html`
       <grampsjs-source-citations

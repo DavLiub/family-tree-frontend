@@ -7,6 +7,7 @@ import '@material/web/chips/input-chip'
 import '@material/web/chips/assist-chip'
 import '@material/web/iconbutton/icon-button.js'
 import '@material/web/button/text-button.js'
+import {confirmSectionRemoval} from './sectionActions.js'
 import {mdiTagPlus} from '@mdi/js'
 
 import {fireEvent} from '../util.js'
@@ -83,7 +84,7 @@ export class GrampsjsTags extends GrampsjsAppStateMixin(LitElement) {
       edit: {type: Boolean},
       hideTags: {type: Array},
       noHeading: {type: Boolean},
-      _managing: {state: true},
+      dialogContent: {state: true},
     }
   }
 
@@ -93,26 +94,17 @@ export class GrampsjsTags extends GrampsjsAppStateMixin(LitElement) {
     this.edit = false
     this.hideTags = []
     this.noHeading = false
-    this._managing = false
+    this.dialogContent = ''
   }
 
   render() {
     const canEdit = this.appState.permissions?.canEdit
-    const effectiveEdit = canEdit && (this.edit || this._managing)
+    const effectiveEdit = canEdit
     if (Object.keys(this.data).length === 0 && !canEdit) {
       return html``
     }
     return html`
       ${this.noHeading ? '' : html`<h4>${this._('Tags')}</h4>`}
-      ${canEdit && this.data.length > 0 && !this.edit
-        ? html`<md-text-button
-            @click=${() => {
-              this._managing = !this._managing
-            }}
-          >
-            ${this._(this._managing ? 'Finish editing section' : 'Edit tags')}
-          </md-text-button>`
-        : ''}
       <div class="tags">
         <md-chip-set>
           ${this.data
@@ -127,7 +119,9 @@ export class GrampsjsTags extends GrampsjsAppStateMixin(LitElement) {
                     )};--tag-color-bg:${colorToCss(obj.color, 0.12)}"
                     @remove=${e => {
                       e.preventDefault()
-                      this._handleClear(obj.handle)
+                      confirmSectionRemoval(this, () =>
+                        this._handleClear(obj.handle)
+                      )
                     }}
                   ></md-input-chip>`
                 : html`<md-assist-chip
@@ -158,6 +152,7 @@ export class GrampsjsTags extends GrampsjsAppStateMixin(LitElement) {
             `
           : ''}
       </div>
+      ${this.dialogContent}
     `
   }
 

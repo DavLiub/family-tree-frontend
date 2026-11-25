@@ -1,4 +1,5 @@
 import {css, html} from 'lit'
+import {mdiPlus} from '@mdi/js'
 import {classMap} from 'lit/directives/class-map.js'
 
 import '@material/mwc-button'
@@ -48,16 +49,39 @@ export class GrampsjsNames extends GrampsjsEditableList {
   }
 
   render() {
-    return html`${super.render()}
-      ${this.appState.permissions?.canEdit
-        ? html`${!this.data.some(name => getNameKind(name) === 'birth')
-              ? html`<md-text-button @click=${() => this._handleAdd('birth')}
-                  >${this._('Add birth name')}</md-text-button
-                >`
-              : ''}<md-text-button @click="${() => this._handleAdd('change')}">
-              ${this._('Add another name')}
-            </md-text-button>`
-        : ''} <span role="status" aria-live="polite">${this._saveStatus}</span>`
+    return html`${super.render()}<span role="status" aria-live="polite"
+        >${this._saveStatus}</span
+      >`
+  }
+
+  _renderCreateActions() {
+    if (!this.appState.permissions?.canEdit) return ''
+    const add = (kind, label) => html`<md-text-button
+      @click=${() => this._handleAdd(kind)}
+    >
+      <grampsjs-icon slot="icon" path=${mdiPlus}></grampsjs-icon>${this._(
+        label
+      )}</md-text-button
+    >`
+    return html`<div class="section-create-actions">
+      ${!this.data.some(name => getNameKind(name) === 'birth')
+        ? add('birth', 'Add birth name')
+        : ''}
+      ${add('change', 'Add another name')}
+    </div>`
+  }
+
+  _renderRowRemove(index) {
+    return index > 0 ? super._renderRowRemove(index, 'Delete name') : ''
+  }
+
+  _canRemoveIndex(index) {
+    return index > 0 && super._canRemoveIndex(index)
+  }
+
+  _requestRowRemove(index) {
+    this._selectedIndex = index
+    this._handleDelete()
   }
 
   row(obj, i) {
@@ -90,22 +114,25 @@ export class GrampsjsNames extends GrampsjsEditableList {
               .data="${obj}"
             ></grampsjs-name>
             ${this._renderRowEdit(i, 'Edit name')}
-            ${i > 0 && this.appState.permissions?.canEdit
-              ? html`<md-text-button
-                  slot="end"
-                  class="display-name-action"
-                  @click="${e => {
-                    e.stopPropagation()
-                    fireEvent(this, 'edit:action', {
-                      action: 'makePrimaryName',
-                      index: i,
-                    })
-                  }}"
-                  >${this._('Show this name on the card')}</md-text-button
-                >`
-              : ''}
           </md-list-item>
         `}`
+  }
+
+  _renderExtraRowActions(index) {
+    return html` ${index > 0 && this.appState.permissions?.canEdit
+      ? html`<md-text-button
+          slot="end"
+          class="display-name-action"
+          @click="${e => {
+            e.stopPropagation()
+            fireEvent(this, 'edit:action', {
+              action: 'makePrimaryName',
+              index,
+            })
+          }}"
+          >${this._('Show this name on the card')}</md-text-button
+        >`
+      : ''}`
   }
 
   _handleAdd(kind = 'change') {
@@ -147,6 +174,7 @@ export class GrampsjsNames extends GrampsjsEditableList {
 
   _handleDelete() {
     const handle = this._selectedIndex
+    if (handle <= 0 || !this.appState.permissions?.canEdit) return
     this.dialogContent = html`
       <md-dialog open @cancel="${e => e.preventDefault()}">
         <span slot="headline">${this._('Are you sure?')}</span>
