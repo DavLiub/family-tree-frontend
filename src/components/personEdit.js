@@ -53,11 +53,12 @@ export function buildPersonEditPayload(person, fields) {
               return stored || surname
                 ? [
                     {
-                      _class: 'Surname',
-                      ...stored,
+                      ...(stored || {
+                        _class: 'Surname',
+                        origintype: 'Patronymic',
+                        primary: false,
+                      }),
                       surname,
-                      origintype: stored?.origintype || 'Patronymic',
-                      primary: stored?.primary ?? false,
                     },
                   ]
                 : []
