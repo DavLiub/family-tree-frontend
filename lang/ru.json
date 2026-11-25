@@ -584,5 +584,10 @@
     "This photo is no longer attached to the person": "Это фото больше не связано с человеком",
     "Choose an image file": "Выберите файл изображения",
     "Unable to upload photo": "Не удалось загрузить фото",
-    "The photo was uploaded but could not be attached. Save again to retry.": "Фото загружено, но не удалось прикрепить его к человеку. Нажмите «Сохранить» ещё раз."
+    "The photo was uploaded but could not be attached. Save again to retry.": "Фото загружено, но не удалось прикрепить его к человеку. Нажмите «Сохранить» ещё раз.",
+    "Basic details": "Основные данные",
+    "Open person card": "Открыть карточку человека",
+    "Birth and death details are saved in their own forms.": "Даты и места рождения и смерти сохраняются в отдельных формах.",
+    "Discard unsaved changes?": "Отменить несохранённые изменения?",
+    "Open without saving": "Открыть без сохранения"
 }
