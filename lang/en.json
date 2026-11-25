@@ -583,5 +583,10 @@
   "This photo is no longer attached to the person": "This photo is no longer attached to the person",
   "Choose an image file": "Choose an image file",
   "Unable to upload photo": "Unable to upload photo",
-  "The photo was uploaded but could not be attached. Save again to retry.": "The photo was uploaded but could not be attached. Save again to retry."
+  "The photo was uploaded but could not be attached. Save again to retry.": "The photo was uploaded but could not be attached. Save again to retry.",
+  "Basic details": "Basic details",
+  "Open person card": "Open person card",
+  "Birth and death details are saved in their own forms.": "Birth and death details are saved in their own forms.",
+  "Discard unsaved changes?": "Discard unsaved changes?",
+  "Open without saving": "Open without saving"
 }

@@ -139,6 +139,7 @@ export class ChartCanvas {
       canEdit,
       canEditPhoto: settings.canEditPhoto,
       photoLabel: settings.photoLabel,
+      editLabel: settings.editLabel,
       palette,
       boxWidth,
       boxHeight,

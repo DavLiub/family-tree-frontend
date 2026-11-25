@@ -9,6 +9,7 @@ const settings = {
   boxWidth: 250,
   boxHeight: 104,
   photoLabel: 'Add photo',
+  editLabel: 'Basic details',
   palette: chartPalette,
 }
 
@@ -30,7 +31,7 @@ describe('tree photo button', () => {
     svg.node().addEventListener('touchstart', drag)
     const button = nodes.node().querySelector('.person-photo-button')
     expect(button.getAttribute('role')).toBe('button')
-    expect(button.querySelector('rect').getAttribute('width')).toBe('44')
+    expect(button.querySelector('rect').getAttribute('width')).toBe('24')
     button.dispatchEvent(new MouseEvent('click', {bubbles: true}))
     button.dispatchEvent(
       new KeyboardEvent('keydown', {key: 'Enter', bubbles: true})
@@ -61,7 +62,30 @@ describe('tree photo button', () => {
     expect(svg.node().querySelectorAll('.person-photo-button')).toHaveLength(1)
     updatePhotoButtons(nodes, {...settings, canEditPhoto: false})
     expect(
-      svg.node().querySelectorAll('.person-photo-button, .person-photo-target')
+      svg
+        .node()
+        .querySelectorAll(
+          '.person-photo-button, .person-photo-target, .person-edit-button'
+        )
     ).toHaveLength(0)
   })
+})
+
+it('places the small photo plus on the portrait and uses the upper corner for editing', () => {
+  const svg = create('svg')
+  const nodes = svg
+    .selectAll('g')
+    .data([{handle: 'p'}])
+    .join('g')
+  updatePhotoButtons(nodes, settings)
+  const plus = svg.node().querySelector('.person-photo-button')
+  const edit = svg.node().querySelector('.person-edit-button')
+  expect(plus.getAttribute('transform')).toBe('translate(-62, 23)')
+  expect(plus.querySelector('circle').getAttribute('r')).toBe('8')
+  expect(edit.getAttribute('transform')).toBe('translate(103, -30)')
+  expect(edit.getAttribute('aria-label')).toBe('Basic details')
+  const action = vi.fn()
+  svg.node().addEventListener('person:basic-edit', action)
+  edit.dispatchEvent(new MouseEvent('click', {bubbles: true}))
+  expect(action.mock.calls[0][0].detail).toEqual({handle: 'p'})
 })

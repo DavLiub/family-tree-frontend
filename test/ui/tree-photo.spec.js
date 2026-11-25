@@ -30,3 +30,39 @@ for (const target of ['.person-photo-button', '.person-photo-target']) {
     await noOverflow(page)
   })
 }
+
+test('tree pencil opens basic data with a link to the full person card', async ({
+  page,
+  site,
+  isMobile,
+}) => {
+  site.treePhoto()
+  await site.open('/tree')
+  const view = page.locator('grampsjs-view-tree')
+  await view.evaluate(element => {
+    element.grampsId = 'TEST-I0001'
+  })
+  const edit = view.locator('.person-edit-button')
+  await expect(edit).toHaveAccessibleName('Basic details')
+  if (isMobile) await edit.tap()
+  else await edit.click()
+  const form = view.locator('grampsjs-form-edit-person')
+  await expect(form.locator('md-dialog')).toHaveJSProperty('open', true)
+  await expect(
+    form.getByRole('textbox', {name: 'Given name', exact: true})
+  ).toHaveValue('Alexandria Synthetic')
+  await expect(
+    form.getByRole('textbox', {name: 'Patronymic', exact: true})
+  ).toBeVisible()
+  await expect(
+    form.getByRole('button', {name: 'Edit birth details', exact: true})
+  ).toBeVisible()
+  await expect(
+    form.getByRole('button', {name: 'Edit death details', exact: true})
+  ).toBeVisible()
+  await noOverflow(page)
+  await form
+    .getByRole('button', {name: 'Open person card', exact: true})
+    .click()
+  await expect(page).toHaveURL(/\/person\/TEST-I0001$/)
+})
