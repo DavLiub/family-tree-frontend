@@ -59,9 +59,12 @@ export class GrampsjsNames extends GrampsjsEditableList {
     const add = (kind, label) => html`<md-text-button
       @click=${() => this._handleAdd(kind)}
     >
-      <grampsjs-icon slot="icon" path=${mdiPlus}></grampsjs-icon>${this._(
-        label
-      )}</md-text-button
+      <grampsjs-icon
+        slot="icon"
+        path=${mdiPlus}
+        color="var(--mdc-theme-secondary)"
+      ></grampsjs-icon
+      >${this._(label)}</md-text-button
     >`
     return html`<div class="section-create-actions">
       ${!this.data.some(name => getNameKind(name) === 'birth')
