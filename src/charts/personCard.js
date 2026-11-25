@@ -348,6 +348,6 @@ export function clearPersonCardInteraction(nodes) {
   nodes
     .style('cursor', null)
     .on('click mouseenter mouseleave', null)
-    .selectAll('.add-person-btn, .person-photo-button')
+    .selectAll('.add-person-btn, .person-photo-button, .person-photo-target')
     .remove()
 }

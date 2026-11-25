@@ -14,23 +14,8 @@ export function updatePhotoButtons(
       'transform',
       `translate(${boxWidth / 2 - 22}, ${-boxHeight / 2 + 22})`
     )
-    .attr('role', 'button')
-    .attr('tabindex', 0)
-    .attr('aria-label', photoLabel)
-    .style('cursor', 'pointer')
-    .on('pointerdown', event => event.stopPropagation())
-    .on('pointerenter', () => fireEvent(window, 'object:preview-hide'))
-    .on('click', function (event, d) {
-      event.stopPropagation()
-      event.preventDefault()
-      fireEvent(this, 'person:photo-edit', {handle: handle(d)})
-    })
-    .on('keydown', function (event) {
-      if (!['Enter', ' '].includes(event.key)) return
-      event.stopPropagation()
-      event.preventDefault()
-      this.dispatchEvent(new MouseEvent('click', {bubbles: true}))
-    })
+
+  bindPhotoAction(buttons, handle, photoLabel)
   buttons
     .selectAll('rect')
     .data(d => [d])
@@ -55,4 +40,40 @@ export function updatePhotoButtons(
     .attr('stroke', palette.addButtonIcon)
     .attr('stroke-width', 2)
     .style('pointer-events', 'none')
+  const radius = Math.min(30, (boxHeight - 20) / 2)
+  const targets = nodes
+    .selectAll('.person-photo-target')
+    .data(d => (canEditPhoto && handle(d) ? [d] : []))
+    .join('g')
+    .attr('class', 'person-photo-target')
+    .attr('transform', `translate(${-boxWidth / 2 + 10 + radius}, 0)`)
+  targets
+    .selectAll('circle')
+    .data(d => [d])
+    .join('circle')
+    .attr('r', radius)
+    .attr('fill', 'transparent')
+    .attr('pointer-events', 'all')
+  bindPhotoAction(targets, handle, photoLabel)
+}
+
+function bindPhotoAction(buttons, handle, photoLabel) {
+  buttons
+    .attr('role', 'button')
+    .attr('tabindex', 0)
+    .attr('aria-label', photoLabel)
+    .style('cursor', 'pointer')
+    .on('pointerdown mousedown touchstart', event => event.stopPropagation())
+    .on('pointerenter', () => fireEvent(window, 'object:preview-hide'))
+    .on('click', function (event, d) {
+      event.stopPropagation()
+      event.preventDefault()
+      fireEvent(this, 'person:photo-edit', {handle: handle(d)})
+    })
+    .on('keydown', function (event) {
+      if (!['Enter', ' '].includes(event.key)) return
+      event.stopPropagation()
+      event.preventDefault()
+      this.dispatchEvent(new MouseEvent('click', {bubbles: true}))
+    })
 }
