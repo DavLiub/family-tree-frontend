@@ -563,5 +563,15 @@
     "Edit section": "Редактировать раздел",
     "Edit tags": "Изменить метки",
     "Finish editing section": "Готово",
-    "Delete name": "Удалить имя"
+    "Delete name": "Удалить имя",
+    "Delete from tree": "Удалить из древа",
+    "Detach from person": "Открепить от карточки",
+    "Delete entry": "Удалить запись",
+    "The record will remain in the tree and on other cards.": "Запись останется в древе и в других карточках.",
+    "This record will be deleted everywhere it is used. Related records will remain.": "Запись будет удалена из всех мест использования. Связанные записи останутся.",
+    "Used by records": "Где используется",
+    "Unable to check record usage": "Не удалось проверить, где используется запись",
+    "Record usage changed. Review the list and confirm again.": "Связи записи изменились. Проверьте список и подтвердите ещё раз.",
+    "Unable to delete record": "Не удалось удалить запись",
+    "Full record usage requires permission to view private records": "Для проверки всех связей нужно право просмотра приватных записей"
 }

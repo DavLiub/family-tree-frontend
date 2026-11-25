@@ -26,6 +26,23 @@ describe('appStateUpdatePermissions', () => {
     localStorage.removeItem('access_token')
   })
 
+  it('keeps global deletion separate from editing permission', () => {
+    localStorage.setItem(
+      'access_token',
+      makeFakeJwt({permissions: ['EditObject']})
+    )
+    expect(appStateUpdatePermissions(BASE_STATE).permissions.canDelete).toBe(
+      false
+    )
+    localStorage.setItem(
+      'access_token',
+      makeFakeJwt({permissions: ['EditObject', 'DeleteObject']})
+    )
+    expect(appStateUpdatePermissions(BASE_STATE).permissions.canDelete).toBe(
+      true
+    )
+  })
+
   it('sets canAdd when AddObject permission is present', () => {
     localStorage.setItem(
       'access_token',
