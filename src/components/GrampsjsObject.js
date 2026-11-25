@@ -634,6 +634,7 @@ export class GrampsjsObject extends GrampsjsAppStateMixin(LitElement) {
   _renderSectionManagement(key) {
     if (
       this.preview ||
+      this._objectEndpoint === 'people' ||
       !this.appState.permissions?.canEdit ||
       !_allTabs[key].conditionEdit(this.data)
     )
@@ -753,7 +754,9 @@ export class GrampsjsObject extends GrampsjsAppStateMixin(LitElement) {
   }
 
   renderSectionContent(sectionKey) {
-    const edit = this.edit || this._addedSections.includes(sectionKey)
+    const edit =
+      this._objectEndpoint !== 'people' &&
+      (this.edit || this._addedSections.includes(sectionKey))
     const mapBounds = (this.data.attribute_list || []).filter(
       attr => attr.type === 'map:bounds'
     )
@@ -960,7 +963,10 @@ export class GrampsjsObject extends GrampsjsAppStateMixin(LitElement) {
       case 'metadata':
         return html`
           ${this.data.attribute_list?.length > 0 ||
-          (edit && 'attribute_list' in this.data)
+          ((edit ||
+            (this._objectEndpoint === 'people' &&
+              this.appState.permissions?.canEdit)) &&
+            'attribute_list' in this.data)
             ? html` <h4>${this._('Attributes')}</h4>
                 <grampsjs-attributes
                   hasEdit
@@ -971,7 +977,10 @@ export class GrampsjsObject extends GrampsjsAppStateMixin(LitElement) {
                 ></grampsjs-attributes>`
             : ''}
           ${this.data.address_list?.length > 0 ||
-          (edit && 'address_list' in this.data)
+          ((edit ||
+            (this._objectEndpoint === 'people' &&
+              this.appState.permissions?.canEdit)) &&
+            'address_list' in this.data)
             ? html`<h4>${this._('Addresses')}</h4>
                 <grampsjs-addresses
                   hasEdit

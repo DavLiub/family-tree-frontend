@@ -8,6 +8,7 @@ import {
   mdiArrowDown,
   mdiArrowUp,
   mdiDelete,
+  mdiLinkOff,
   mdiLinkPlus,
   mdiPencil,
   mdiPlus,
@@ -18,6 +19,7 @@ import '@material/web/list/list-item.js'
 
 import {personListItemStyles, sharedStyles} from '../SharedStyles.js'
 import {GrampsjsAppStateMixin} from '../mixins/GrampsjsAppStateMixin.js'
+import {renderRecordDelete} from './GrampsjsRecordDelete.js'
 import {
   confirmSectionRemoval,
   renderSectionCreateActions,
@@ -75,6 +77,19 @@ export class GrampsjsEditableList extends GrampsjsAppStateMixin(LitElement) {
             --grampsjs-editable-list-selected-active-background-color,
             color-mix(in srgb, var(--md-sys-color-primary) 20%, transparent)
           );
+        }
+
+        .record-actions {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          justify-content: flex-end;
+          max-inline-size: min(12rem, 40vw);
+          gap: 0;
+        }
+
+        .record-actions > * {
+          max-inline-size: 100%;
         }
 
         md-icon-button[disabled] {
@@ -145,8 +160,8 @@ export class GrampsjsEditableList extends GrampsjsAppStateMixin(LitElement) {
 
   _renderRowEdit(index, label = 'Edit') {
     if (!this.appState.permissions?.canEdit) return ''
-    return html`${this._renderRowRemove(index)}<md-icon-button
-        slot="end"
+    return html`<div slot="end" class="record-actions">
+      <md-icon-button
         aria-label="${this._(label)}"
         title="${this._(label)}"
         @click="${e => {
@@ -158,11 +173,64 @@ export class GrampsjsEditableList extends GrampsjsAppStateMixin(LitElement) {
         <grampsjs-icon
           path="${mdiPencil}"
           color="var(--mdc-theme-secondary)"
-        ></grampsjs-icon>
-      </md-icon-button>`
+        ></grampsjs-icon> </md-icon-button
+      >${this._renderRowRemove(index)}${this._renderRowDelete(
+        index
+      )}${this._renderRowReorder(index)}${this._renderExtraRowActions(index)}
+    </div>`
   }
 
-  _renderRowRemove(index, label = 'Remove from card') {
+  _renderExtraRowActions() {
+    return ''
+  }
+
+  _renderRowReorder(index) {
+    if (
+      !this.hasReorder ||
+      !this.appState.permissions?.canEdit ||
+      this.data.length < 2
+    )
+      return ''
+    return [
+      [index === 0, 'Move Up', mdiArrowUp, () => this._handleUp()],
+      [
+        index === this.data.length - 1,
+        'Move Down',
+        mdiArrowDown,
+        () => this._handleDown(),
+      ],
+    ].map(
+      ([disabled, label, icon, action]) => html`<md-icon-button
+        slot="end"
+        ?disabled=${disabled}
+        aria-label=${this._(label)}
+        title=${this._(label)}
+        @click=${e => {
+          e.stopPropagation()
+          this._selectedIndex = index
+          action()
+        }}
+        ><grampsjs-icon
+          path=${icon}
+          color="var(--mdc-theme-secondary)"
+        ></grampsjs-icon
+      ></md-icon-button>`
+    )
+  }
+
+  _sharedEndpoint() {
+    return {Citation: 'citations'}[this.objType]
+  }
+
+  _renderRowDelete(index) {
+    const endpoint = this._sharedEndpoint()
+    return endpoint ? renderRecordDelete(this, endpoint, this.data[index]) : ''
+  }
+
+  _renderRowRemove(
+    index,
+    label = this._sharedEndpoint() ? 'Detach from person' : 'Delete entry'
+  ) {
     if (
       !this.appState.permissions?.canEdit ||
       typeof this._handleDelete !== 'function'
@@ -177,7 +245,7 @@ export class GrampsjsEditableList extends GrampsjsAppStateMixin(LitElement) {
         this._requestRowRemove(index)
       }}
       ><grampsjs-icon
-        path=${mdiDelete}
+        path=${this._sharedEndpoint() ? mdiLinkOff : mdiDelete}
         color="var(--mdc-theme-secondary)"
       ></grampsjs-icon
     ></md-icon-button>`
@@ -189,10 +257,15 @@ export class GrampsjsEditableList extends GrampsjsAppStateMixin(LitElement) {
 
   _requestRowRemove(index) {
     if (!this._canRemoveIndex(index)) return
-    confirmSectionRemoval(this, () => {
-      this._selectedIndex = index
-      this._handleDelete(new Event('confirm'))
-    })
+    confirmSectionRemoval(
+      this,
+      () => {
+        this._selectedIndex = index
+        this._handleDelete(new Event('confirm'))
+      },
+      this._sharedEndpoint() ? 'Detach from person' : 'Delete entry',
+      Boolean(this._sharedEndpoint())
+    )
   }
 
   _handleSelected(i) {

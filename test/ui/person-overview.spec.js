@@ -9,6 +9,9 @@ test('person overview preserves facts, relationships, names, media, and citation
   site.personOverview()
   await site.open('/person/TEST-I0001')
   const card = personCard(page)
+  await expect(card.getByRole('button', {name: /^Edit section:/})).toHaveCount(
+    0
+  )
 
   await expect(card.locator('h2').first()).toContainText(
     'Alexandria Synthetic van Example and Sample'

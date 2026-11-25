@@ -114,22 +114,25 @@ export class GrampsjsNames extends GrampsjsEditableList {
               .data="${obj}"
             ></grampsjs-name>
             ${this._renderRowEdit(i, 'Edit name')}
-            ${i > 0 && this.appState.permissions?.canEdit
-              ? html`<md-text-button
-                  slot="end"
-                  class="display-name-action"
-                  @click="${e => {
-                    e.stopPropagation()
-                    fireEvent(this, 'edit:action', {
-                      action: 'makePrimaryName',
-                      index: i,
-                    })
-                  }}"
-                  >${this._('Show this name on the card')}</md-text-button
-                >`
-              : ''}
           </md-list-item>
         `}`
+  }
+
+  _renderExtraRowActions(index) {
+    return html` ${index > 0 && this.appState.permissions?.canEdit
+      ? html`<md-text-button
+          slot="end"
+          class="display-name-action"
+          @click="${e => {
+            e.stopPropagation()
+            fireEvent(this, 'edit:action', {
+              action: 'makePrimaryName',
+              index,
+            })
+          }}"
+          >${this._('Show this name on the card')}</md-text-button
+        >`
+      : ''}`
   }
 
   _handleAdd(kind = 'change') {

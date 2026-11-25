@@ -45,6 +45,9 @@ export class GrampsjsFormContextObject extends GrampsjsNestedContextMixin(
   renderForm() {
     const fields = Object.entries(fieldsByEndpoint[this.endpoint] || {})
     return html`
+      <p>
+        ${this._('Changes to this record also appear wherever it is used.')}
+      </p>
       ${this._renderTextFields(fields.slice(0, 1))}
       ${['media', 'citations'].includes(this.endpoint)
         ? html`
@@ -60,9 +63,6 @@ export class GrampsjsFormContextObject extends GrampsjsNestedContextMixin(
         <summary>${this._('More details')}</summary>
         ${this._renderTextFields(fields.slice(1))}
         ${this.endpoint === 'citations' ? this._renderCitationDetails() : ''}
-        <p>
-          ${this._('Changes to this record also appear wherever it is used.')}
-        </p>
       </details>
     `
   }

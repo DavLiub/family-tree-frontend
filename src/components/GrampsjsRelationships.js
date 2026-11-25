@@ -10,6 +10,7 @@ import {
   mdiLinkVariantPlus,
 } from '@mdi/js'
 
+import {renderRecordDelete} from './GrampsjsRecordDelete.js'
 import {sharedStyles} from '../SharedStyles.js'
 import {fireEvent} from '../util.js'
 import './GrampsjsConnectedChildren.js'
@@ -121,6 +122,13 @@ export class GrampsjsRelationships extends GrampsjsAppStateMixin(LitElement) {
     const totalParent = parentFamilies.length
     const totalPartner = this.families.length
     return html`
+      ${this.appState.permissions?.canEdit
+        ? this._renderAddParentFamilyButtons()
+        : ''}
+      ${this.appState.permissions?.canEdit &&
+      this.appState.permissions?.canAdd !== false
+        ? this._renderAddPartnerFamilyButton()
+        : ''}
       ${parentFamilies.map((familyProfile, i) =>
         this._renderFamily(
           familyProfile,
@@ -128,7 +136,7 @@ export class GrampsjsRelationships extends GrampsjsAppStateMixin(LitElement) {
             ? this._('Parents')
             : html`${this._('Parents')} <span class="number">${i + 1}</span>`,
           this._('Siblings'),
-          this.edit
+          this.appState.permissions?.canEdit
             ? html`
                 <div class="edit-buttons">
                   ${totalParent > 1
@@ -139,25 +147,18 @@ export class GrampsjsRelationships extends GrampsjsAppStateMixin(LitElement) {
                         () => this._moveParentFamily(i, 1)
                       )
                     : ''}
-                  ${this._renderRemoveButton(
-                    () => this._openFamilyEditor(familyProfile, true),
-                    this._('Remove person as child of these parents')
-                  )}
                 </div>
               `
             : ''
         )
       )}
-      ${this.appState.permissions?.canEdit
-        ? this._renderAddParentFamilyButtons()
-        : ''}
       ${this.families.map((familyProfile, i) =>
         this._renderFamily(
           familyProfile,
           html`${this._('Partner')}
           ${totalPartner < 2 ? '' : html`<span class="number">${i + 1}</span>`}`,
           this._('Children'),
-          this.edit
+          this.appState.permissions?.canEdit
             ? html`
                 <div class="edit-buttons">
                   ${totalPartner > 1
@@ -168,19 +169,11 @@ export class GrampsjsRelationships extends GrampsjsAppStateMixin(LitElement) {
                         () => this._movePartnerFamily(i, 1)
                       )
                     : ''}
-                  ${this._renderRemoveButton(
-                    () => this._openFamilyEditor(familyProfile, true),
-                    this._('Remove person as parent in this family')
-                  )}
                 </div>
               `
             : ''
         )
       )}
-      ${this.appState.permissions?.canEdit &&
-      this.appState.permissions?.canAdd !== false
-        ? this._renderAddPartnerFamilyButton()
-        : ''}
       ${this.dialogContent}
     `
   }
@@ -448,13 +441,12 @@ export class GrampsjsRelationships extends GrampsjsAppStateMixin(LitElement) {
             >
               ${this._('Edit family relationships')}
             </md-outlined-button>
-            ${!this.edit
-              ? html`<md-outlined-button
-                  @click=${() => this._openFamilyEditor(familyProfile, true)}
-                >
-                  ${this._('Disconnect from this family')}
-                </md-outlined-button>`
-              : ''}
+            <md-outlined-button
+              @click=${() => this._openFamilyEditor(familyProfile, true)}
+            >
+              ${this._('Disconnect from this family')}
+            </md-outlined-button>
+            ${renderRecordDelete(this, 'families', familyProfile)}
           </p>`
         : ''}
       <grampsjs-connected-parents

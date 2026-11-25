@@ -23,6 +23,9 @@ export class GrampsjsFormContextEvent extends GrampsjsNestedContextMixin(
   renderForm() {
     return html`
       <div ?inert=${this.saving} aria-busy=${this.saving}>
+        <p>
+          ${this._('Changes to this record also appear wherever it is used.')}
+        </p>
         ${super.renderForm()}
         <grampsjs-form-string
           fullwidth
@@ -33,9 +36,7 @@ export class GrampsjsFormContextEvent extends GrampsjsNestedContextMixin(
         ></grampsjs-form-string>
         <details>
           <summary>${this._('More details')}</summary>
-          <p>
-            ${this._('Changes to this record also appear wherever it is used.')}
-          </p>
+
           <p>
             ${this._('Place changes are saved separately from this event.')}
           </p>

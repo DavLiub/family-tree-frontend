@@ -12,6 +12,7 @@ import {renderIcon} from '../objectRender.js'
 import {loadContextObject} from './contextEdit.js'
 import {mdiPencil, mdiAccountEdit} from '@mdi/js'
 import {renderContextEventEditor} from './GrampsjsFormContextEvent.js'
+import {renderRecordDelete} from './GrampsjsRecordDelete.js'
 import {renderSectionCreateActions} from './sectionActions.js'
 import '@material/web/select/outlined-select.js'
 import '@material/web/select/select-option.js'
@@ -50,6 +51,7 @@ export class GrampsjsEvents extends GrampsjsEditableList {
     return {
       profile: {type: Array},
       eventRef: {type: Array},
+      referenceIndices: {type: Array},
       dialogContent: {type: String},
       useSummary: {type: Boolean},
       sorted: {type: Boolean},
@@ -62,6 +64,7 @@ export class GrampsjsEvents extends GrampsjsEditableList {
     super()
     this.profile = []
     this.eventRef = []
+    this.referenceIndices = []
     this.objType = 'Event'
     this.addLabel = 'Add event'
     this.useSummary = false
@@ -71,6 +74,23 @@ export class GrampsjsEvents extends GrampsjsEditableList {
     this.hasShare = false
     this.hasReorder = true
     this.defaultRole = 'Primary'
+  }
+
+  _sharedEndpoint() {
+    return 'events'
+  }
+
+  _renderRowRemove(index) {
+    return this.eventRef?.[index]?.ref === this.data[index]?.handle
+      ? super._renderRowRemove(index)
+      : ''
+  }
+
+  _canRemoveIndex(index) {
+    return (
+      super._canRemoveIndex(index) &&
+      this.eventRef?.[index]?.ref === this.data[index]?.handle
+    )
   }
 
   _renderCreateActions() {
@@ -132,7 +152,7 @@ export class GrampsjsEvents extends GrampsjsEditableList {
             ? fireEvent(this, 'grampsjs-events:place-hover', {handle: null})
             : undefined}"
       >
-        ${this._renderRowRemove(j)} ${this._getPrimaryText(objProfile)}
+        ${this._getPrimaryText(objProfile)}
         <span slot="supporting-text"
           >${this._getSecondaryText(objProfile)}</span
         >
@@ -148,42 +168,46 @@ export class GrampsjsEvents extends GrampsjsEditableList {
               >${objProfile.profile.age}</span
             >`
           : ''}
-        ${this.appState.permissions?.canEdit
-          ? html`
-              <md-icon-button
-                slot="end"
-                aria-label=${this._('Edit event')}
-                title=${this._('Edit event')}
-                @click=${e => {
-                  e.stopPropagation()
-                  this._editEvent(obj)
-                }}
-              >
-                <grampsjs-icon
-                  path=${mdiPencil}
-                  color="var(--mdc-theme-secondary)"
-                ></grampsjs-icon>
-              </md-icon-button>
-            `
-          : ''}
-        ${this.edit && this.eventRef[j]
-          ? html`
-              <md-icon-button
-                slot="end"
-                aria-label=${this._('Edit event role')}
-                title=${this._('Edit event role')}
-                @click=${e => {
-                  e.stopPropagation()
-                  this._handleEditRole(j)
-                }}
-              >
-                <grampsjs-icon
-                  path=${mdiAccountEdit}
-                  color="var(--mdc-theme-secondary)"
-                ></grampsjs-icon>
-              </md-icon-button>
-            `
-          : ''}
+        <div slot="end" class="record-actions">
+          ${this.appState.permissions?.canEdit
+            ? html`
+                <md-icon-button
+                  slot="end"
+                  aria-label=${this._('Edit event')}
+                  title=${this._('Edit event')}
+                  @click=${e => {
+                    e.stopPropagation()
+                    this._editEvent(obj)
+                  }}
+                >
+                  <grampsjs-icon
+                    path=${mdiPencil}
+                    color="var(--mdc-theme-secondary)"
+                  ></grampsjs-icon>
+                </md-icon-button>
+              `
+            : ''}
+          ${this._renderRowRemove(j)}
+          ${renderRecordDelete(this, 'events', obj)}${this._renderRowReorder(j)}
+          ${this.appState.permissions?.canEdit && this.eventRef?.[j]
+            ? html`
+                <md-icon-button
+                  slot="end"
+                  aria-label=${this._('Edit event role')}
+                  title=${this._('Edit event role')}
+                  @click=${e => {
+                    e.stopPropagation()
+                    this._handleEditRole(j)
+                  }}
+                >
+                  <grampsjs-icon
+                    path=${mdiAccountEdit}
+                    color="var(--mdc-theme-secondary)"
+                  ></grampsjs-icon>
+                </md-icon-button>
+              `
+            : ''}
+        </div>
       </md-list-item>
     `
   }
@@ -362,7 +386,7 @@ export class GrampsjsEvents extends GrampsjsEditableList {
     fireEvent(this, 'edit:action', {
       action: 'updateEventRef',
       data: e.detail.data,
-      index: this._selectedIndex,
+      index: this.referenceIndices[this._selectedIndex] ?? this._selectedIndex,
     })
     e.preventDefault()
     e.stopPropagation()
@@ -374,9 +398,10 @@ export class GrampsjsEvents extends GrampsjsEditableList {
   }
 
   _handleDelete() {
+    if (!this._canRemoveIndex(this._selectedIndex)) return
     fireEvent(this, 'edit:action', {
       action: 'delEvent',
-      index: this._selectedIndex,
+      index: this.referenceIndices[this._selectedIndex] ?? this._selectedIndex,
     })
   }
 
