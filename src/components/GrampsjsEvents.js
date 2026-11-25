@@ -37,8 +37,10 @@ export class GrampsjsEvents extends GrampsjsEditableList {
           gap: 0.5rem;
         }
         md-outlined-select {
+          inline-size: 16rem;
           max-inline-size: 100%;
-          min-inline-size: 0;
+          flex: 0 1 16rem;
+          min-inline-size: min(16rem, 100%);
         }
       `,
     ]
@@ -130,7 +132,7 @@ export class GrampsjsEvents extends GrampsjsEditableList {
             ? fireEvent(this, 'grampsjs-events:place-hover', {handle: null})
             : undefined}"
       >
-        ${this._getPrimaryText(objProfile)}
+        ${this._renderRowRemove(j)} ${this._getPrimaryText(objProfile)}
         <span slot="supporting-text"
           >${this._getSecondaryText(objProfile)}</span
         >

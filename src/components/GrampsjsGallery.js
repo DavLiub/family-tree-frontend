@@ -16,7 +16,10 @@ import './GrampsjsFormContextObject.js'
 import './GrampsjsFormNewMedia.js'
 import '@material/web/iconbutton/icon-button.js'
 import {fireEvent} from '../util.js'
-import {renderSectionCreateActions} from './sectionActions.js'
+import {
+  confirmSectionRemoval,
+  renderSectionCreateActions,
+} from './sectionActions.js'
 import {GrampsjsAppStateMixin} from '../mixins/GrampsjsAppStateMixin.js'
 
 export class GrampsjsGallery extends GrampsjsAppStateMixin(LitElement) {
@@ -176,7 +179,7 @@ export class GrampsjsGallery extends GrampsjsAppStateMixin(LitElement) {
                       </md-icon-button>
                     `
                   : ''}
-                ${this.edit
+                ${this.appState.permissions?.canEdit
                   ? html`<md-icon-button
                       aria-label="${this._('Remove from card')}"
                       @click="${e => {
@@ -275,7 +278,9 @@ export class GrampsjsGallery extends GrampsjsAppStateMixin(LitElement) {
   }
 
   _handleMediaRefDel(index) {
-    fireEvent(this, 'edit:action', {action: 'delMediaRef', index})
+    confirmSectionRemoval(this, () =>
+      fireEvent(this, 'edit:action', {action: 'delMediaRef', index})
+    )
   }
 
   _handleMediaRefLeft(index) {

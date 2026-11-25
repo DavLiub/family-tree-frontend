@@ -1,5 +1,6 @@
 import {afterEach, describe, expect, it, vi} from 'vitest'
 import {render} from 'lit'
+import {GrampsjsNames} from '../../src/components/GrampsjsNames.js'
 import {GrampsjsPerson} from '../../src/components/GrampsjsPerson.js'
 import {GrampsjsEvents} from '../../src/components/GrampsjsEvents.js'
 import {GrampsjsUrls} from '../../src/components/GrampsjsUrls.js'
@@ -135,4 +136,32 @@ describe('section creation in ordinary viewing mode', () => {
     expect(card._addedSections).not.toContain('events')
     expect(card._getTabs(false)).toContain('events')
   })
+})
+
+it('places name creation above rows and confirms removal without a global mode', async () => {
+  const names = new GrampsjsNames()
+  names.appState = state()
+  names.data = [
+    {first_name: 'Alex', type: 'Married Name'},
+    {first_name: 'Alex', type: 'Birth Name'},
+  ]
+  document.body.append(names)
+  await names.updateComplete
+  const root = names.renderRoot
+  expect(root.querySelector('.section-create-actions + md-list')).not.toBeNull()
+  expect(
+    button(root, 'Add another name').querySelector('[slot="icon"]')
+  ).not.toBeNull()
+  const remove = root.querySelectorAll('[aria-label="Delete name"]')
+  expect(remove.length).toBe(1)
+  const action = vi.fn()
+  names.addEventListener('edit:action', action)
+  remove[0].dispatchEvent(new MouseEvent('click', {bubbles: true}))
+  await names.updateComplete
+  expect(root.querySelector('md-dialog')).not.toBeNull()
+  expect(action).not.toHaveBeenCalled()
+  button(root, 'Cancel').click()
+  await names.updateComplete
+  expect(root.querySelector('md-dialog')).toBeNull()
+  expect(names.edit).toBe(false)
 })

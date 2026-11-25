@@ -18,7 +18,10 @@ import '@material/web/list/list-item.js'
 
 import {personListItemStyles, sharedStyles} from '../SharedStyles.js'
 import {GrampsjsAppStateMixin} from '../mixins/GrampsjsAppStateMixin.js'
-import {renderSectionCreateActions} from './sectionActions.js'
+import {
+  confirmSectionRemoval,
+  renderSectionCreateActions,
+} from './sectionActions.js'
 
 export class GrampsjsEditableList extends GrampsjsAppStateMixin(LitElement) {
   static get styles() {
@@ -142,21 +145,54 @@ export class GrampsjsEditableList extends GrampsjsAppStateMixin(LitElement) {
 
   _renderRowEdit(index, label = 'Edit') {
     if (!this.appState.permissions?.canEdit) return ''
+    return html`${this._renderRowRemove(index)}<md-icon-button
+        slot="end"
+        aria-label="${this._(label)}"
+        title="${this._(label)}"
+        @click="${e => {
+          e.stopPropagation()
+          this._selectedIndex = index
+          this._handleEdit()
+        }}"
+      >
+        <grampsjs-icon
+          path="${mdiPencil}"
+          color="var(--mdc-theme-secondary)"
+        ></grampsjs-icon>
+      </md-icon-button>`
+  }
+
+  _renderRowRemove(index, label = 'Remove from card') {
+    if (
+      !this.appState.permissions?.canEdit ||
+      typeof this._handleDelete !== 'function'
+    )
+      return ''
     return html`<md-icon-button
       slot="end"
-      aria-label="${this._(label)}"
-      title="${this._(label)}"
-      @click="${e => {
+      aria-label=${this._(label)}
+      title=${this._(label)}
+      @click=${e => {
         e.stopPropagation()
-        this._selectedIndex = index
-        this._handleEdit()
-      }}"
-    >
-      <grampsjs-icon
-        path="${mdiPencil}"
+        this._requestRowRemove(index)
+      }}
+      ><grampsjs-icon
+        path=${mdiDelete}
         color="var(--mdc-theme-secondary)"
-      ></grampsjs-icon>
-    </md-icon-button>`
+      ></grampsjs-icon
+    ></md-icon-button>`
+  }
+
+  _canRemoveIndex(index) {
+    return index >= 0 && index < this.data.length
+  }
+
+  _requestRowRemove(index) {
+    if (!this._canRemoveIndex(index)) return
+    confirmSectionRemoval(this, () => {
+      this._selectedIndex = index
+      this._handleDelete(new Event('confirm'))
+    })
   }
 
   _handleSelected(i) {
@@ -219,10 +255,10 @@ export class GrampsjsEditableList extends GrampsjsAppStateMixin(LitElement) {
           `
         : ''}
       <md-icon-button
-        ?disabled="${this._selectedIndex === -1}"
+        ?disabled="${!this._canRemoveIndex(this._selectedIndex)}"
         class="edit"
         aria-label=${this._('Remove selected item')}
-        @click="${this._handleDelete}"
+        @click="${() => this._requestRowRemove(this._selectedIndex)}"
       >
         <grampsjs-icon
           path="${mdiDelete}"

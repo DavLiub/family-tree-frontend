@@ -13,7 +13,10 @@ import '../components/GrampsjsFormContextNote.js'
 import '../components/GrampsjsIcon.js'
 import '../components/GrampsjsTooltip.js'
 import {fireEvent, makeHandle} from '../util.js'
-import {renderSectionCreateActions} from '../components/sectionActions.js'
+import {
+  confirmSectionRemoval,
+  renderSectionCreateActions,
+} from '../components/sectionActions.js'
 
 const BASE_DIR = ''
 
@@ -178,9 +181,11 @@ export class GrampsjsViewObjectNotes extends GrampsjsViewObjectsDetail {
               </md-text-button>
             `
           : ''}
-        ${this.edit
+        ${this.appState.permissions?.canEdit
           ? html`
               <md-icon-button
+                aria-label=${this._('Remove from card')}
+                title=${this._('Remove from card')}
                 @click="${() => this._handleNoteRefDel(obj.handle)}"
                 id="del-note-${obj.handle}"
               >
@@ -216,7 +221,9 @@ export class GrampsjsViewObjectNotes extends GrampsjsViewObjectsDetail {
   }
 
   _handleNoteRefDel(handle) {
-    fireEvent(this, 'edit:action', {action: 'delNoteRef', handle})
+    confirmSectionRemoval(this, () =>
+      fireEvent(this, 'edit:action', {action: 'delNoteRef', handle})
+    )
   }
 
   _handleNewNoteSave(e) {
