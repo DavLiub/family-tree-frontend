@@ -11,6 +11,7 @@ import './GrampsjsFormFamilyContext.js'
 import '@material/web/button/outlined-button.js'
 import './GrampsjsFormNewPerson.js'
 import {GrampsjsObject} from './GrampsjsObject.js'
+import {getPersonNameDisplay} from './nameHistory.js'
 import {getSymbols} from '../symbols.js'
 import {getSummaryEvent} from './personEventEdit.js'
 import {renderContextEventEditor} from './GrampsjsFormContextEvent.js'
@@ -90,13 +91,19 @@ export class GrampsjsFamily extends GrampsjsObject {
     `
   }
 
+  _parentName(role) {
+    const record = this.data?.extended?.[role]
+    const handle = this.data?.[`${role}_handle`]
+    const person =
+      record?.primary_name && (!handle || record.handle === handle)
+        ? record
+        : {profile: this.data?.profile?.[role]}
+    return getPersonNameDisplay(person, text => this._(text)).text || '…'
+  }
+
   _renderTitle() {
-    return html`
-      ${this.data?.profile?.father?.name_given || '…'}
-      ${this.data?.profile?.father?.name_surname || '…'} &amp;
-      ${this.data?.profile?.mother?.name_given || '…'}
-      ${this.data?.profile?.mother?.name_surname || '…'}
-    `
+    return html`${this._parentName('father')} &amp;
+    ${this._parentName('mother')}`
   }
 
   _renderMarriageBlock() {
@@ -201,8 +208,7 @@ export class GrampsjsFamily extends GrampsjsObject {
                 ? html`<grampsjs-object-link
                       object-type="person"
                       gramps-id="${profile.gramps_id}"
-                      >${profile.name_given || '…'}
-                      ${profile.name_surname || '…'}</grampsjs-object-link
+                      >${this._parentName(parent)}</grampsjs-object-link
                     >
                     ${birthDate || deathDate
                       ? html`<span class="parent-dates">
