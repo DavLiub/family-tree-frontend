@@ -1,8 +1,9 @@
-import {describe, expect, it, vi} from 'vitest'
-import {render} from 'lit'
+import {afterEach, describe, expect, it, vi} from 'vitest'
 import {GrampsjsNames} from '../../src/components/GrampsjsNames.js'
 import {GrampsjsFormName} from '../../src/components/GrampsjsFormName.js'
 import {GrampsjsFormEditName} from '../../src/components/GrampsjsFormEditName.js'
+
+afterEach(() => document.body.replaceChildren())
 
 const appState = {
   permissions: {canEdit: true},
@@ -64,25 +65,29 @@ describe('complete historical name variants', () => {
     ).toBe('Birth Name')
   })
 
-  it('reveals empty fields without changing the native Name', () => {
+  it('reveals empty fields without changing the native Name', async () => {
     const name = new GrampsjsFormName()
     name.appState = appState
     name.webawesome = true
     name.historyMode = true
     name.data = {_class: 'Name', first_name: '', surname_list: []}
-    const root = name.createRenderRoot()
     const original = structuredClone(name.data)
-    render(name.render(), root, {host: name})
+    document.body.append(name)
+    await name.updateComplete
+    const root = name.renderRoot
     expect(root.querySelector('#first_name')).toBeNull()
     expect(root.querySelector('#patronymic')).toBeNull()
     expect(root.querySelector('grampsjs-form-surname')).toBeNull()
     for (const label of ['Add given name', 'Add patronymic']) {
-      ;[...root.querySelectorAll('wa-button')]
-        .find(button => button.textContent.trim() === label)
-        .click()
+      const button = [...root.querySelectorAll('wa-button')].find(
+        button => button.textContent.trim() === label
+      )
+      await button.updateComplete
+      button.click()
+      await name.updateComplete
     }
     name._handleAddSurname()
-    render(name.render(), root, {host: name})
+    await name.updateComplete
     expect(root.querySelector('#first_name')).not.toBeNull()
     expect(root.querySelector('#patronymic')).not.toBeNull()
     expect(root.querySelector('grampsjs-form-surname')).not.toBeNull()

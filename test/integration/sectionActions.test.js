@@ -1,4 +1,4 @@
-import {describe, expect, it, vi} from 'vitest'
+import {afterEach, describe, expect, it, vi} from 'vitest'
 import {render} from 'lit'
 import {GrampsjsPerson} from '../../src/components/GrampsjsPerson.js'
 import {GrampsjsEvents} from '../../src/components/GrampsjsEvents.js'
@@ -6,6 +6,8 @@ import {GrampsjsUrls} from '../../src/components/GrampsjsUrls.js'
 import {GrampsjsGallery} from '../../src/components/GrampsjsGallery.js'
 import {GrampsjsViewObjectNotes} from '../../src/views/GrampsjsViewObjectNotes.js'
 import {GrampsjsRelationships} from '../../src/components/GrampsjsRelationships.js'
+
+afterEach(() => document.body.replaceChildren())
 
 const state = (canEdit = true, canAdd = true) => ({
   permissions: {canEdit, canAdd},
@@ -25,15 +27,23 @@ const button = (root, label) =>
   )
 
 describe('section creation in ordinary viewing mode', () => {
-  it('opens event creation or attachment even when there are no events', () => {
+  it('opens event creation or attachment even when there are no events', async () => {
     const events = new GrampsjsEvents()
     events.appState = state()
     events.hasAdd = true
     events.hasShare = true
     events._handleAdd = vi.fn()
     events._handleShare = vi.fn()
-    const root = mount(events)
+    document.body.append(events)
+    await events.updateComplete
+    const root = events.renderRoot
     const select = root.querySelector('md-outlined-select')
+    await select.updateComplete
+    await Promise.all(
+      [...select.querySelectorAll('md-select-option')].map(
+        option => option.updateComplete
+      )
+    )
     select.value = 'Death'
     select.dispatchEvent(new Event('change'))
     button(root, 'Attach existing').click()
