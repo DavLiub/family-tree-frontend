@@ -239,7 +239,9 @@ export const test = base.extend({
         if (
           treePhoto &&
           url.pathname === '/api/people/synthetic-person' &&
-          url.search === '?extend=media_list'
+          ['?extend=media_list', '?profile=all&extend=all', ''].includes(
+            url.search
+          )
         )
           return reply(record)
         if (url.pathname === '/api/trees/-/config') return reply({})

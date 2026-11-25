@@ -315,6 +315,7 @@ export function updatePersonCardInteraction(
     canEdit,
     canEditPhoto = false,
     photoLabel = 'Add photo',
+    editLabel = 'Basic details',
     palette = chartPalette,
     boxWidth,
     boxHeight,
@@ -327,6 +328,7 @@ export function updatePersonCardInteraction(
   updatePhotoButtons(nodes, {
     canEditPhoto,
     photoLabel,
+    editLabel,
     handle: d => d.person?.handle,
     boxWidth,
     boxHeight,
@@ -348,6 +350,8 @@ export function clearPersonCardInteraction(nodes) {
   nodes
     .style('cursor', null)
     .on('click mouseenter mouseleave', null)
-    .selectAll('.add-person-btn, .person-photo-button, .person-photo-target')
+    .selectAll(
+      '.add-person-btn, .person-photo-button, .person-photo-target, .person-edit-button'
+    )
     .remove()
 }
