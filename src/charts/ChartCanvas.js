@@ -137,6 +137,8 @@ export class ChartCanvas {
     updatePersonCardInteraction(people, {
       interactive,
       canEdit,
+      canEditPhoto: settings.canEditPhoto,
+      photoLabel: settings.photoLabel,
       palette,
       boxWidth,
       boxHeight,

@@ -10,9 +10,14 @@ import {fireEvent, emptyDate} from '../util.js'
 export class GrampsjsFormNewMedia extends GrampsjsNewMediaMixin(
   GrampsjsObjectForm
 ) {
+  static get properties() {
+    return {accept: {type: String}}
+  }
+
   constructor() {
     super()
     this.data = {_class: 'Media'}
+    this.accept = ''
   }
 
   renderForm() {
@@ -21,6 +26,7 @@ export class GrampsjsFormNewMedia extends GrampsjsNewMediaMixin(
       <p>
         <grampsjs-form-upload
           preview
+          accept=${this.accept}
           id="upload"
           .appState="${this.appState}"
         ></grampsjs-form-upload>

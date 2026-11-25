@@ -62,6 +62,7 @@ export const test = base.extend({
     let login
     let people
     let personOverview = false
+    let treePhoto = false
     let signedIn = false
     const recordError = owner => error =>
       errors.push({
@@ -235,6 +236,12 @@ export const test = base.extend({
         }
         return reply([{old: person, new: record}])
       } else if (signedIn && method === 'GET') {
+        if (
+          treePhoto &&
+          url.pathname === '/api/people/synthetic-person' &&
+          url.search === '?extend=media_list'
+        )
+          return reply(record)
         if (url.pathname === '/api/trees/-/config') return reply({})
         if (url.pathname === '/api/tasks/') return reply([])
         if (url.pathname === '/api/people/') {
@@ -334,6 +341,9 @@ export const test = base.extend({
           records: structuredClone(peopleRecords),
         }
         return people
+      },
+      treePhoto() {
+        treePhoto = true
       },
       personOverview(data = overviewPerson) {
         personOverview = true

@@ -2,6 +2,7 @@ import {html, css, LitElement} from 'lit'
 
 import {sharedStyles} from '../SharedStyles.js'
 import {GrampsjsAppStateMixin} from '../mixins/GrampsjsAppStateMixin.js'
+import './GrampsjsTreePhoto.js'
 import {FamilyGraph} from '../charts/model/FamilyGraph.js'
 
 export class GrampsjsChartBase extends GrampsjsAppStateMixin(LitElement) {
@@ -26,6 +27,7 @@ export class GrampsjsChartBase extends GrampsjsAppStateMixin(LitElement) {
   static get properties() {
     return {
       data: {type: Array},
+      _photoHandle: {state: true},
       containerWidth: {type: Number},
       containerHeight: {type: Number},
     }
@@ -34,6 +36,7 @@ export class GrampsjsChartBase extends GrampsjsAppStateMixin(LitElement) {
   constructor() {
     super()
     this.data = []
+    this._photoHandle = ''
     this.containerWidth = -1
     this.containerHeight = -1
   }
@@ -51,6 +54,28 @@ export class GrampsjsChartBase extends GrampsjsAppStateMixin(LitElement) {
 
   render() {
     return html`<div id="container">${this.renderChart()}</div>`
+  }
+
+  _openPersonPhoto(event) {
+    event.stopPropagation()
+    const handle = event.detail?.handle
+    if (this.appState.permissions?.canEdit && this._graph?.person(handle))
+      this._photoHandle = handle
+  }
+
+  renderPhotoDialog() {
+    return this._photoHandle
+      ? html`<grampsjs-tree-photo
+          .appState=${this.appState}
+          personHandle=${this._photoHandle}
+          @object:saved=${() => {
+            this._photoHandle = ''
+          }}
+          @object:cancel=${() => {
+            this._photoHandle = ''
+          }}
+        ></grampsjs-tree-photo>`
+      : ''
   }
 
   firstUpdated() {

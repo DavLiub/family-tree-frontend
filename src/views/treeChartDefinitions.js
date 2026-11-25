@@ -30,7 +30,7 @@ import {chartNameDisplayFormat, menuSelectionHandler} from '../util.js'
 // Chart components and filter rules also count the selected person's
 // generation.
 
-const treeExtend = 'event_ref_list,primary_parent_family,family_list'
+const treeExtend = 'event_ref_list,primary_parent_family,family_list,media_list'
 
 function treeRules(grampsId, ancestorGenerations, descendantGenerations) {
   return {
