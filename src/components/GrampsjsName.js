@@ -5,6 +5,7 @@ import './GrampsjsFormEditName.js'
 import './GrampsjsObjectForm.js'
 import {GrampsjsAppStateMixin} from '../mixins/GrampsjsAppStateMixin.js'
 import {sharedStyles} from '../SharedStyles.js'
+import {formatHistoryName} from './nameHistory.js'
 
 export class GrampsjsName extends GrampsjsAppStateMixin(LitElement) {
   static get styles() {
@@ -46,13 +47,6 @@ export class GrampsjsName extends GrampsjsAppStateMixin(LitElement) {
 
   render() {
     if (!this.compact) return this._renderDetails()
-    const surnames = (this.data.surname_list || [])
-      .map(surname =>
-        [surname.prefix, surname.surname, surname.connector]
-          .filter(Boolean)
-          .join(' ')
-      )
-      .join(' ')
     const hasDetails =
       this.data.type ||
       ['title', 'suffix', 'call', 'nick', 'famnick'].some(
@@ -60,7 +54,7 @@ export class GrampsjsName extends GrampsjsAppStateMixin(LitElement) {
       ) ||
       (this.data.surname_list || []).some(surname => surname.origintype)
     return html`
-      <p>${[this.data.first_name, surnames].filter(Boolean).join(' ')}</p>
+      <p>${formatHistoryName(this.data)}</p>
       ${hasDetails
         ? html`<details
             @click="${e => e.stopPropagation()}"

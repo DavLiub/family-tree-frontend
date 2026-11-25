@@ -12,6 +12,9 @@ import {renderIcon} from '../objectRender.js'
 import {loadContextObject} from './contextEdit.js'
 import {mdiPencil, mdiAccountEdit} from '@mdi/js'
 import {renderContextEventEditor} from './GrampsjsFormContextEvent.js'
+import {renderSectionCreateActions} from './sectionActions.js'
+import '@material/web/select/outlined-select.js'
+import '@material/web/select/select-option.js'
 import './GrampsjsFormSelectObject.js'
 import './GrampsjsFormEventRef.js'
 import './GrampsjsFormNewEvent.js'
@@ -26,6 +29,16 @@ export class GrampsjsEvents extends GrampsjsEditableList {
         md-list-item {
           --md-list-item-top-space: 16px;
           --md-list-item-bottom-space: 16px;
+        }
+        .event-create-actions {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 0.5rem;
+        }
+        md-outlined-select {
+          max-inline-size: 100%;
+          min-inline-size: 0;
         }
       `,
     ]
@@ -48,13 +61,47 @@ export class GrampsjsEvents extends GrampsjsEditableList {
     this.profile = []
     this.eventRef = []
     this.objType = 'Event'
+    this.addLabel = 'Add event'
     this.useSummary = false
     this.sorted = false
     this.hideAge = false
     this.hasAdd = false
-    this.hasShare = true
+    this.hasShare = false
     this.hasReorder = true
     this.defaultRole = 'Primary'
+  }
+
+  _renderCreateActions() {
+    const permissions = this.appState.permissions || {}
+    if (!permissions.canEdit) return ''
+    const types =
+      this.defaultRole === 'Family'
+        ? ['Marriage', 'Divorce']
+        : ['Birth', 'Death']
+    return html`<div class="event-create-actions">
+      ${this.hasAdd && permissions.canAdd !== false
+        ? html`<md-outlined-select
+            label=${this._('Add event')}
+            @change=${event => {
+              const type = event.target.value
+              event.target.value = ''
+              this._handleAdd(type === '__other__' ? '' : type)
+            }}
+          >
+            ${[...types, '__other__'].map(
+              type => html`<md-select-option value=${type}>
+                <div slot="headline">
+                  ${this._(type === '__other__' ? 'Other event' : type)}
+                </div>
+              </md-select-option>`
+            )}
+          </md-outlined-select>`
+        : ''}
+      ${renderSectionCreateActions(this, {
+        attach: this.hasShare,
+        onAttach: () => this._handleShare(),
+      })}
+    </div>`
   }
 
   row(obj, i) {

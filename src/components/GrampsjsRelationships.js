@@ -148,7 +148,9 @@ export class GrampsjsRelationships extends GrampsjsAppStateMixin(LitElement) {
             : ''
         )
       )}
-      ${this.edit ? this._renderAddParentFamilyButtons() : ''}
+      ${this.appState.permissions?.canEdit
+        ? this._renderAddParentFamilyButtons()
+        : ''}
       ${this.families.map((familyProfile, i) =>
         this._renderFamily(
           familyProfile,
@@ -175,7 +177,10 @@ export class GrampsjsRelationships extends GrampsjsAppStateMixin(LitElement) {
             : ''
         )
       )}
-      ${this.edit ? this._renderAddPartnerFamilyButton() : ''}
+      ${this.appState.permissions?.canEdit &&
+      this.appState.permissions?.canAdd !== false
+        ? this._renderAddPartnerFamilyButton()
+        : ''}
       ${this.dialogContent}
     `
   }
@@ -253,14 +258,19 @@ export class GrampsjsRelationships extends GrampsjsAppStateMixin(LitElement) {
             slot="icon"
           ></grampsjs-icon>
         </md-outlined-button>
-        <md-outlined-button class="edit" @click="${this._handleAddNewParents}">
-          ${this._('Add a new set of parents')}
-          <grampsjs-icon
-            path="${mdiAccountMultiplePlus}"
-            color="var(--mdc-theme-secondary)"
-            slot="icon"
-          ></grampsjs-icon>
-        </md-outlined-button>
+        ${this.appState.permissions?.canAdd !== false
+          ? html`<md-outlined-button
+              class="edit"
+              @click="${this._handleAddNewParents}"
+            >
+              ${this._('Add a new set of parents')}
+              <grampsjs-icon
+                path="${mdiAccountMultiplePlus}"
+                color="var(--mdc-theme-secondary)"
+                slot="icon"
+              ></grampsjs-icon>
+            </md-outlined-button>`
+          : ''}
       </p>
     `
   }

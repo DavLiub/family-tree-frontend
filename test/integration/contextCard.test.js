@@ -3,7 +3,7 @@ import {GrampsjsViewPerson} from '../../src/views/GrampsjsViewPerson.js'
 import {GrampsjsPerson} from '../../src/components/GrampsjsPerson.js'
 
 describe('simple card sections', () => {
-  it('keeps empty sections out of edit mode until explicitly requested', () => {
+  it('keeps basic creation sections visible but leaves empty advanced sections collapsed', () => {
     const card = new GrampsjsPerson()
     card.appState = {permissions: {canEdit: true}, dbInfo: {}}
     card.data = {
@@ -20,11 +20,18 @@ describe('simple card sections', () => {
       address_list: [],
       urls: [{path: 'https://example.org/synthetic-record'}],
     }
-    expect(card._getTabs(true)).toEqual(['names', 'links'])
+    expect(card._getTabs(true)).toEqual([
+      'relationships',
+      'events',
+      'gallery',
+      'names',
+      'notes',
+      'links',
+    ])
     card._addedSections = ['notes']
     expect(card._getTabs(false)).toContain('notes')
     expect(card._getTabs(true)).toContain('notes')
-    expect(card._getTabs(true)).not.toContain('gallery')
+    expect(card._getTabs(true)).not.toContain('metadata')
   })
 })
 

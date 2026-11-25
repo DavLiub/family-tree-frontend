@@ -18,6 +18,7 @@ import '@material/web/list/list-item.js'
 
 import {personListItemStyles, sharedStyles} from '../SharedStyles.js'
 import {GrampsjsAppStateMixin} from '../mixins/GrampsjsAppStateMixin.js'
+import {renderSectionCreateActions} from './sectionActions.js'
 
 export class GrampsjsEditableList extends GrampsjsAppStateMixin(LitElement) {
   static get styles() {
@@ -92,6 +93,7 @@ export class GrampsjsEditableList extends GrampsjsAppStateMixin(LitElement) {
       hasEdit: {type: Boolean},
       hasReorder: {type: Boolean},
       _selectedIndex: {type: Number},
+      addLabel: {type: String},
     }
   }
 
@@ -107,10 +109,12 @@ export class GrampsjsEditableList extends GrampsjsAppStateMixin(LitElement) {
     this.hasEdit = false
     this.hasReorder = false
     this._selectedIndex = -1
+    this.addLabel = 'Add'
   }
 
   render() {
     return html`
+      ${this._renderCreateActions()}
       ${Object.keys(this.data).length === 0 && !this.edit
         ? ''
         : html`
@@ -123,6 +127,17 @@ export class GrampsjsEditableList extends GrampsjsAppStateMixin(LitElement) {
           `}
       ${this.dialogContent}
     `
+  }
+
+  _renderCreateActions() {
+    return renderSectionCreateActions(this, {
+      add: this.hasAdd && typeof this._handleAdd === 'function',
+      attach: this.hasShare && typeof this._handleShare === 'function',
+      addLabel: this.addLabel,
+      newObject: ['Event', 'Citation', 'ChildRef'].includes(this.objType),
+      onAdd: () => this._handleAdd(),
+      onAttach: () => this._handleShare(),
+    })
   }
 
   _renderRowEdit(index, label = 'Edit') {
@@ -158,32 +173,14 @@ export class GrampsjsEditableList extends GrampsjsAppStateMixin(LitElement) {
   }
 
   _renderActionBtns() {
+    if (!this.appState.permissions?.canEdit) return ''
     return html`
-      ${this.hasShare
-        ? html`
-            <md-icon-button class="edit" @click="${this._handleShare}">
-              <grampsjs-icon
-                path="${mdiLinkPlus}"
-                color="var(--mdc-theme-secondary)"
-              ></grampsjs-icon>
-            </md-icon-button>
-          `
-        : ''}
-      ${this.hasAdd
-        ? html`
-            <md-icon-button class="edit" @click="${this._handleAdd}">
-              <grampsjs-icon
-                path="${mdiPlus}"
-                color="var(--mdc-theme-secondary)"
-              ></grampsjs-icon>
-            </md-icon-button>
-          `
-        : ''}
       ${this.hasEdit
         ? html`
             <md-icon-button
               ?disabled="${this._selectedIndex === -1}"
               class="edit"
+              aria-label=${this._('Edit selected item')}
               @click="${this._handleEdit}"
             >
               <grampsjs-icon
@@ -199,6 +196,7 @@ export class GrampsjsEditableList extends GrampsjsAppStateMixin(LitElement) {
               ?disabled="${this._selectedIndex === -1 ||
               this._selectedIndex === 0}"
               class="edit"
+              aria-label=${this._('Move Up')}
               @click="${this._handleUp}"
             >
               <grampsjs-icon
@@ -210,6 +208,7 @@ export class GrampsjsEditableList extends GrampsjsAppStateMixin(LitElement) {
               ?disabled="${this._selectedIndex === -1 ||
               this._selectedIndex === this.data.length - 1}"
               class="edit"
+              aria-label=${this._('Move Down')}
               @click="${this._handleDown}"
             >
               <grampsjs-icon
@@ -222,6 +221,7 @@ export class GrampsjsEditableList extends GrampsjsAppStateMixin(LitElement) {
       <md-icon-button
         ?disabled="${this._selectedIndex === -1}"
         class="edit"
+        aria-label=${this._('Remove selected item')}
         @click="${this._handleDelete}"
       >
         <grampsjs-icon
@@ -233,7 +233,7 @@ export class GrampsjsEditableList extends GrampsjsAppStateMixin(LitElement) {
   }
 
   updated(changed) {
-    if (changed.has('edit')) {
+    if (changed.has('edit') && changed.get('edit') !== undefined) {
       this._selectedIndex = -1
       this.dialogContent = ''
     }

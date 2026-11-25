@@ -3,8 +3,6 @@ import {
   mdiArrowLeft,
   mdiArrowRight,
   mdiDelete,
-  mdiLinkPlus,
-  mdiPlus,
   mdiPencil,
   mdiStarOutline,
 } from '@mdi/js'
@@ -18,6 +16,7 @@ import './GrampsjsFormContextObject.js'
 import './GrampsjsFormNewMedia.js'
 import '@material/web/iconbutton/icon-button.js'
 import {fireEvent} from '../util.js'
+import {renderSectionCreateActions} from './sectionActions.js'
 import {GrampsjsAppStateMixin} from '../mixins/GrampsjsAppStateMixin.js'
 
 export class GrampsjsGallery extends GrampsjsAppStateMixin(LitElement) {
@@ -101,24 +100,14 @@ export class GrampsjsGallery extends GrampsjsAppStateMixin(LitElement) {
         ${this.media.map((mediaObj, i) => this._renderThumbnail(i))}
       </div>
 
-      ${this.edit
-        ? html`
-            <div class="edit-actions">
-              <md-icon-button @click="${this._handleShareClick}">
-                <grampsjs-icon
-                  path="${mdiLinkPlus}"
-                  color="var(--mdc-theme-secondary)"
-                ></grampsjs-icon>
-              </md-icon-button>
-              <md-icon-button @click="${this._handleAddClick}">
-                <grampsjs-icon
-                  path="${mdiPlus}"
-                  color="var(--mdc-theme-secondary)"
-                ></grampsjs-icon>
-              </md-icon-button>
-            </div>
-          `
-        : ''}
+      ${renderSectionCreateActions(this, {
+        add: true,
+        attach: true,
+        newObject: true,
+        addLabel: 'Add photo or document',
+        onAdd: () => this._handleAddClick(),
+        onAttach: () => this._handleShareClick(),
+      })}
 
       <grampsjs-view-media-lightbox
         active

@@ -4,6 +4,9 @@ import {css, html} from 'lit'
 
 import {mdiPencil} from '@mdi/js'
 import '@material/web/fab/fab.js'
+import '@material/web/dialog/dialog.js'
+import '@material/web/button/text-button.js'
+import '@material/web/button/filled-button.js'
 import '../components/GrampsjsIcon.js'
 
 import {GrampsjsView} from './GrampsjsView.js'
@@ -124,6 +127,9 @@ export class GrampsjsViewObject extends GrampsjsView {
       _className: {type: String},
       _saveButton: {type: Boolean},
       _saveStatus: {state: true},
+      _deletePending: {state: true},
+      _deleteError: {state: true},
+      _confirmingDelete: {state: true},
     }
   }
 
@@ -135,6 +141,9 @@ export class GrampsjsViewObject extends GrampsjsView {
     this._className = ''
     this._saveButton = false
     this._saveStatus = ''
+    this._deletePending = false
+    this._deleteError = ''
+    this._confirmingDelete = false
     this._requestVersion = 0
     this._boundDisableEditMode = this._disableEditMode.bind(this)
     this._boundDeleteSelf = this._deleteSelf.bind(this)
@@ -183,10 +192,75 @@ export class GrampsjsViewObject extends GrampsjsView {
     }
     return html`
       ${this.renderBreadcrumbs()} ${this.renderElement()}
-      ${this.canEdit && !this.edit ? this.renderFab() : ''}
+      ${this.canEdit && !this.edit && this._className !== 'person'
+        ? this.renderFab()
+        : ''}
+      ${this.canEdit && this._className === 'person'
+        ? this._renderPersonActions()
+        : ''}
       ${this.editDialogContent}
       <span role="status" aria-live="polite">${this._saveStatus}</span>
     `
+  }
+
+  _renderPersonActions() {
+    return html`
+      <details>
+        <summary>${this._('Other actions')}</summary>
+        <md-text-button
+          @click=${() => {
+            this._deleteError = ''
+            this._confirmingDelete = true
+          }}
+          >${this._('Delete person')}</md-text-button
+        >
+      </details>
+      ${this._confirmingDelete
+        ? html`<md-dialog
+            open
+            @cancel=${e => {
+              e.preventDefault()
+              if (!this._deletePending) this._confirmingDelete = false
+            }}
+          >
+            <div slot="headline">${this._('Delete person')}</div>
+            <div slot="content">
+              ${this._('Delete this object?')} ${this._data.gramps_id}
+              ${this._deleteError
+                ? html`<p role="alert">${this._deleteError}</p>`
+                : ''}
+            </div>
+            <div slot="actions">
+              <md-text-button
+                ?disabled=${this._deletePending}
+                @click=${() => {
+                  this._confirmingDelete = false
+                }}
+                >${this._('Cancel')}</md-text-button
+              >
+              <md-filled-button
+                ?disabled=${this._deletePending}
+                @click=${this._confirmPersonDelete}
+                >${this._('_Delete')}</md-filled-button
+              >
+            </div>
+          </md-dialog>`
+        : ''}
+    `
+  }
+
+  async _confirmPersonDelete() {
+    if (!this.canEdit || !this.active || this._deletePending) return
+    this._deletePending = true
+    try {
+      const result = await this._deleteSelf()
+      if (result?.error) this._deleteError = this._(result.error)
+      else this._confirmingDelete = false
+    } catch (error) {
+      this._deleteError = this._(error.message || 'Unable to delete person')
+    } finally {
+      this._deletePending = false
+    }
   }
 
   renderFab() {
@@ -202,6 +276,7 @@ export class GrampsjsViewObject extends GrampsjsView {
   }
 
   _activateEditMode() {
+    if (this._className === 'person') return
     this.edit = true
     fireEvent(this, 'edit-mode:on', {
       title: this._(editTitle[this._className] || 'Edit'),
@@ -256,6 +331,10 @@ export class GrampsjsViewObject extends GrampsjsView {
 
   update(changed) {
     super.update(changed)
+    if (changed.has('grampsId') || (changed.has('active') && !this.active)) {
+      this._confirmingDelete = false
+      this._deleteError = ''
+    }
     const identityChanged = changed.has('grampsId')
     const needsActivation =
       changed.has('active') &&
@@ -345,7 +424,7 @@ export class GrampsjsViewObject extends GrampsjsView {
     const {handle} = this._data
     const grampsId = this._data.gramps_id
     const endpoint = objectTypeToEndpoint[this._className]
-    if (this.active && endpoint && handle) {
+    if (this.active && this.canEdit && endpoint && handle) {
       const url = `/api/${endpoint}/${handle}`
       const data = await this.appState.apiDelete(url, {dbChanged: false})
       if ('data' in data) {
@@ -365,6 +444,7 @@ export class GrampsjsViewObject extends GrampsjsView {
       } else if ('error' in data) {
         fireEvent(this, 'grampsjs:error', {message: data.error})
       }
+      return data
     }
   }
 

@@ -241,7 +241,7 @@ describe('simple names in the person card', () => {
     const root = renderComponent(names)
     expect(names.edit).toBe(false)
     expect(root.textContent).toContain('Displayed name')
-    expect(root.textContent).toContain('Other name')
+    expect(root.textContent).toContain('Other recorded name')
     const buttons = [...root.querySelectorAll('md-text-button')]
     buttons
       .find(button => button.textContent.includes('Show this name on the card'))

@@ -5,6 +5,7 @@ import '@material/mwc-button'
 import '@material/web/dialog/dialog.js'
 import '@material/web/button/text-button.js'
 import {fireEvent} from '../util.js'
+import {getNameParts, getNameKind, updateNameParts} from './nameHistory.js'
 import {GrampsjsEditableList} from './GrampsjsEditableList.js'
 import './GrampsjsFormEditName.js'
 import './GrampsjsFormSelectObject.js'
@@ -49,9 +50,13 @@ export class GrampsjsNames extends GrampsjsEditableList {
   render() {
     return html`${super.render()}
       ${this.appState.permissions?.canEdit
-        ? html`<md-text-button @click="${this._handleAdd}">
-            ${this._('Add another name')}
-          </md-text-button>`
+        ? html`${!this.data.some(name => getNameKind(name) === 'birth')
+              ? html`<md-text-button @click=${() => this._handleAdd('birth')}
+                  >${this._('Add birth name')}</md-text-button
+                >`
+              : ''}<md-text-button @click="${() => this._handleAdd('change')}">
+              ${this._('Add another name')}
+            </md-text-button>`
         : ''} <span role="status" aria-live="polite">${this._saveStatus}</span>`
   }
 
@@ -70,7 +75,14 @@ export class GrampsjsNames extends GrampsjsEditableList {
             }}"
           >
             <span slot="supporting-text"
-              >${this._(i === 0 ? 'Displayed name' : 'Other name')}</span
+              >${i === 0 ? `${this._('Displayed name')} · ` : ''}${this._(
+                {
+                  birth: 'At birth',
+                  married: 'Name change in marriage',
+                  changed: 'Name change',
+                  other: 'Other recorded name',
+                }[getNameKind(obj)]
+              )}</span
             >
             <grampsjs-name
               compact
@@ -96,12 +108,34 @@ export class GrampsjsNames extends GrampsjsEditableList {
         `}`
   }
 
-  _handleAdd() {
+  _handleAdd(kind = 'change') {
     this._saveStatus = ''
+    const primary = this.data[0] || {}
+    const parts = getNameParts(primary)
+    const cleanSurnames = items =>
+      items.map(
+        ({surname, prefix, connector, origintype, primary: isPrimary}) => ({
+          _class: 'Surname',
+          surname: surname || '',
+          prefix: prefix || '',
+          connector: connector || '',
+          origintype: origintype || '',
+          primary: Boolean(isPrimary),
+        })
+      )
+    const data = updateNameParts(
+      {_class: 'Name', type: kind === 'birth' ? 'Birth Name' : 'Name change'},
+      {
+        given: parts.given,
+        surnames: cleanSurnames(parts.surnames),
+        patronymicParts: cleanSurnames(parts.patronymicParts || []),
+      }
+    )
     this.dialogContent = html`
       <grampsjs-form-edit-name
         id="name"
-        .data=${{type: 'Also Known As'}}
+        historyMode
+        .data=${data}
         @object:save="${this._handleNameAdd}"
         @object:cancel="${this._handleNameCancel}"
         @object:saved="${this._handleNameSaved}"
@@ -153,6 +187,7 @@ export class GrampsjsNames extends GrampsjsEditableList {
     const handle = this._selectedIndex
     this.dialogContent = html`
       <grampsjs-form-edit-name
+        historyMode
         id="name"
         @object:save="${e => this._handleNameSave(handle, e)}"
         @object:cancel="${this._handleNameCancel}"
