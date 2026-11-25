@@ -61,26 +61,30 @@ export function recordUsage(record) {
 }
 
 export class GrampsjsRecordDelete extends GrampsjsAppStateMixin(LitElement) {
-  static styles = css`
-    :host {
-      display: inline-flex;
-    }
-    md-dialog {
-      max-inline-size: min(36rem, 90vw);
-    }
-    li {
-      overflow-wrap: anywhere;
-    }
-  `
+  static get styles() {
+    return css`
+      :host {
+        display: inline-flex;
+      }
+      md-dialog {
+        max-inline-size: min(36rem, 90vw);
+      }
+      li {
+        overflow-wrap: anywhere;
+      }
+    `
+  }
 
-  static properties = {
-    endpoint: {type: String},
-    handle: {type: String},
-    label: {type: String},
-    _open: {state: true},
-    _pending: {state: true},
-    _error: {state: true},
-    _usage: {state: true},
+  static get properties() {
+    return {
+      endpoint: {type: String},
+      handle: {type: String},
+      label: {type: String},
+      _open: {state: true},
+      _pending: {state: true},
+      _error: {state: true},
+      _usage: {state: true},
+    }
   }
 
   constructor() {
