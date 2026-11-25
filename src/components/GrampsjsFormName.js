@@ -274,13 +274,16 @@ export class GrampsjsFormName extends GrampsjsAppStateMixin(LitElement) {
   _renderAddField(key, label) {
     const expand = () => {
       this._expandedFields = [...this._expandedFields, key]
-      this.updateComplete.then(() => {
+      this.updateComplete.then(async () => {
         const field = this.renderRoot.querySelector(
           key === 'given' ? '#first_name' : `#${key}`
         )
-        field?.updateComplete.then(() =>
-          field.renderRoot.querySelector('wa-input, mwc-textfield')?.focus()
+        await field?.updateComplete
+        const control = field?.renderRoot.querySelector(
+          'wa-input, mwc-textfield'
         )
+        await control?.updateComplete
+        if (control?.isConnected) control.focus()
       })
     }
     return this.webawesome
