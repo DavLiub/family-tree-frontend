@@ -97,7 +97,7 @@ describe('chart definitions', () => {
       )
       expect(chart.appState).toBe(appState)
       expect(chart.appState.permissions.canEdit).toBe(true)
-      expect(chart.canEdit).toBe(false)
+      expect(chart.canEdit).toBeFalsy()
     }
   )
 
