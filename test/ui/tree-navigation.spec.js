@@ -46,3 +46,20 @@ for (const slow of [false, true]) {
     }
   })
 }
+
+test('missing home person cannot clear the selected tree', async ({
+  page,
+  site,
+}) => {
+  await site.open('/tree')
+  const view = page.locator('grampsjs-view-tree')
+  await view.evaluate(element => {
+    element.grampsId = 'TEST-I0001'
+  })
+  await expect(view.locator('.person-node')).toHaveCount(1)
+  await expect(view.locator('#button-home')).toBeDisabled()
+  await view.evaluate(element => element._backToHomePerson())
+  await view.getByRole('radio', {name: 'Descendant Tree', exact: true}).click()
+  await expect(view.locator('.person-node')).toHaveCount(1)
+  await expect(view.locator('.person-node')).toBeInViewport()
+})
