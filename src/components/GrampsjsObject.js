@@ -7,6 +7,8 @@ import {mdiTableOfContents, mdiPencil} from '@mdi/js'
 import '@material/web/button/outlined-button.js'
 import '@material/web/iconbutton/icon-button.js'
 import '@material/web/dialog/dialog.js'
+import '@material/web/select/outlined-select.js'
+import '@material/web/select/select-option.js'
 
 import {sharedStyles} from '../SharedStyles.js'
 import '../views/GrampsjsViewObjectNotes.js'
@@ -128,14 +130,16 @@ const _allTabs = {
       data?.backlinks?.citation?.length > 0 && 'abbrev' in data,
     conditionEdit: data => false,
   },
+  links: {
+    title: 'Links',
+    condition: data => data?.urls?.length > 0,
+    conditionEdit: data => 'urls' in data,
+  },
   metadata: {
-    title: 'Metadata',
+    title: 'Additional information',
     condition: data =>
-      data?.attribute_list?.length > 0 ||
-      data?.urls?.length > 0 ||
-      data?.address_list?.length > 0,
-    conditionEdit: data =>
-      'urls' in data || 'attribute_list' in data || 'address_list' in data,
+      data?.attribute_list?.length > 0 || data?.address_list?.length > 0,
+    conditionEdit: data => 'attribute_list' in data || 'address_list' in data,
   },
   associations: {
     title: 'Associations',
@@ -149,7 +153,7 @@ const _allTabs = {
   },
   references: {
     title: 'References',
-    condition: data => Object.keys(data?.backlinks)?.length > 0,
+    condition: data => Object.keys(data?.backlinks || {}).length > 0,
     conditionEdit: data => false,
   },
   revisions: {
@@ -404,6 +408,7 @@ export class GrampsjsObject extends GrampsjsAppStateMixin(LitElement) {
       _objectIcon: {type: String},
       _showReferences: {type: Boolean},
       _wide: {type: Boolean},
+      _addedSections: {state: true},
     }
   }
 
@@ -419,6 +424,7 @@ export class GrampsjsObject extends GrampsjsAppStateMixin(LitElement) {
     this._sectionObserver = null
     this._currentVisibleSection = ''
     this._wide = false
+    this._addedSections = []
     this._resizeObserver = new ResizeObserver(entries => {
       this._wide = entries[0].contentRect.width >= 1200
     })
@@ -438,6 +444,12 @@ export class GrampsjsObject extends GrampsjsAppStateMixin(LitElement) {
 
   updated(changedProperties) {
     super.updated(changedProperties)
+    if (
+      changedProperties.has('data') &&
+      changedProperties.get('data')?.handle !== this.data.handle
+    ) {
+      this._addedSections = []
+    }
 
     // Re-setup the observer when the data changes to observe the new sections
     if (changedProperties.has('data') && Object.keys(this.data).length > 0) {
@@ -588,14 +600,16 @@ export class GrampsjsObject extends GrampsjsAppStateMixin(LitElement) {
       ;[this._currentTab] = tabKeys
     }
     if (tabKeys.length === 0) {
-      return html``
+      return this._renderAddSection()
     }
     return html`
+      ${this._renderAddSection()}
       ${tabKeys.map(
         (key, idx, tabKeysArray) => html`<div class="row">
           <div class="section" id="section-${key}">
             <h3>
               ${this._(_allTabs[key].title)}
+              ${this._renderSectionManagement(key)}
               ${this.tocSidebar || tabKeysArray.length <= 1 || this.preview
                 ? ''
                 : html`
@@ -615,6 +629,105 @@ export class GrampsjsObject extends GrampsjsAppStateMixin(LitElement) {
         </div>`
       )}
     `
+  }
+
+  _renderSectionManagement(key) {
+    if (
+      this.preview ||
+      this._objectEndpoint === 'people' ||
+      !this.appState.permissions?.canEdit ||
+      !_allTabs[key].conditionEdit(this.data)
+    )
+      return ''
+    const managing = this._addedSections.includes(key)
+    return html`<md-outlined-button
+      aria-label=${`${this._(
+        managing ? 'Finish editing section' : 'Edit section'
+      )}: ${this._(_allTabs[key].title)}`}
+      aria-pressed=${String(managing)}
+      @click=${() => {
+        this._addedSections = managing
+          ? this._addedSections.filter(section => section !== key)
+          : [...this._addedSections, key]
+      }}
+    >
+      <grampsjs-icon
+        slot="icon"
+        path=${mdiPencil}
+        color="var(--mdc-theme-secondary)"
+      ></grampsjs-icon>
+      ${this._(managing ? 'Finish editing section' : 'Edit section')}
+    </md-outlined-button>`
+  }
+
+  _isPrimarySection(key) {
+    return (
+      this._objectEndpoint === 'people' &&
+      !this.preview &&
+      this.appState.permissions?.canEdit &&
+      [
+        'relationships',
+        'names',
+        'events',
+        'gallery',
+        'notes',
+        'links',
+      ].includes(key) &&
+      _allTabs[key].conditionEdit(this.data)
+    )
+  }
+
+  _renderAddSection() {
+    if (!this.appState.permissions?.canEdit || this.preview) return ''
+    const available = Object.keys(_allTabs).filter(
+      key =>
+        _allTabs[key].conditionEdit(this.data) &&
+        key !== 'names' &&
+        !this._isPrimarySection(key)
+    )
+    if (!available.length) return ''
+    const options = available.flatMap(key => {
+      if (key !== 'events') return [{value: key, label: _allTabs[key].title}]
+      const types =
+        this._objectEndpoint === 'people'
+          ? ['Birth', 'Death']
+          : this._objectEndpoint === 'families'
+          ? ['Marriage', 'Divorce']
+          : []
+      return [
+        ...types.map(type => ({value: `events:${type}`, label: type})),
+        {value: key, label: types.length ? 'Other event' : _allTabs[key].title},
+      ]
+    })
+    return html`<md-outlined-select
+      label=${this._('Other information')}
+      @change=${e => {
+        const [key, eventType] = e.target.value.split(':')
+        if (available.includes(key)) {
+          this._addedSections = [...new Set([...this._addedSections, key])]
+          e.target.value = ''
+          this.updateComplete.then(() => {
+            const section = this.renderRoot.querySelector(`#section-${key}`)
+            section?.scrollIntoView({block: 'start'})
+            const actions = {
+              events: ['grampsjs-events', '_handleAdd'],
+              notes: ['grampsjs-view-object-notes', '_handleAddClick'],
+              gallery: ['grampsjs-gallery', '_handleAddClick'],
+              links: ['grampsjs-urls', '_handleAdd'],
+            }
+            const action = actions[key]
+            if (action)
+              section?.querySelector(action[0])?.[action[1]](eventType)
+          })
+        }
+      }}
+    >
+      ${options.map(
+        option => html`<md-select-option value=${option.value}>
+          <div slot="headline">${this._(option.label)}</div>
+        </md-select-option>`
+      )}
+    </md-outlined-select>`
   }
 
   _openTocDialog() {
@@ -641,6 +754,9 @@ export class GrampsjsObject extends GrampsjsAppStateMixin(LitElement) {
   }
 
   renderSectionContent(sectionKey) {
+    const edit =
+      this._objectEndpoint !== 'people' &&
+      (this.edit || this._addedSections.includes(sectionKey))
     const mapBounds = (this.data.attribute_list || []).filter(
       attr => attr.type === 'map:bounds'
     )
@@ -649,7 +765,7 @@ export class GrampsjsObject extends GrampsjsAppStateMixin(LitElement) {
         return html`<grampsjs-relationships
           grampsId="${this.data.gramps_id}"
           .appState="${this.appState}"
-          ?edit=${this.edit}
+          ?edit=${edit}
           .familyList=${this.data?.extended?.families || []}
           .parentFamilyList=${this.data?.extended?.parent_families || []}
           .families=${this.data?.profile?.families || []}
@@ -665,28 +781,28 @@ export class GrampsjsObject extends GrampsjsAppStateMixin(LitElement) {
           <grampsjs-names
             .appState="${this.appState}"
             .data="${[this.data.primary_name, ...this.data.alternate_names]}"
-            ?edit=${this.edit}
+            ?edit=${edit}
           ></grampsjs-names>
         `
       case 'placeNames':
-        return html` ${this.data.alt_names?.length > 0 || this.edit
+        return html` ${this.data.alt_names?.length > 0 || edit
           ? html` <grampsjs-place-names
               .appState="${this.appState}"
               .strings="${this.strings}"
               .data="${this.data.alt_names}"
               .profile="${this.data.profile.alternate_place_names || []}"
-              ?edit=${this.edit}
+              ?edit=${edit}
             ></grampsjs-place-names>`
           : ''}`
       case 'enclosed':
-        return html` ${this.data.placeref_list?.length || this.edit
+        return html` ${this.data.placeref_list?.length || edit
           ? html`
               <h4>${this._('Enclosed By')}</h4>
               <grampsjs-place-refs
                 .appState="${this.appState}"
                 .data="${this.data?.placeref_list}"
                 .profile="${this.data?.profile?.direct_parent_places ?? []}"
-                ?edit="${this.edit}"
+                ?edit="${edit}"
               ></grampsjs-place-refs>
             `
           : ''}
@@ -699,7 +815,7 @@ export class GrampsjsObject extends GrampsjsAppStateMixin(LitElement) {
               ></grampsjs-place-children> `
           : ''}`
       case 'map':
-        return html` ${this.edit
+        return html` ${edit
           ? html`
               <p>
                 <md-outlined-button
@@ -772,7 +888,7 @@ export class GrampsjsObject extends GrampsjsAppStateMixin(LitElement) {
           .data=${this.data?.extended?.events}
           .profile=${this.data?.profile?.events}
           .eventRef=${this.data?.event_ref_list}
-          ?edit="${this.edit}"
+          ?edit="${edit}"
         ></grampsjs-events>`
       case 'placeEvents':
         return html`<grampsjs-events
@@ -807,13 +923,13 @@ export class GrampsjsObject extends GrampsjsAppStateMixin(LitElement) {
           .data=${this.data?.child_ref_list}
           .profile=${this.data?.profile?.children}
           .extended=${this.data?.extended?.children || []}
-          ?edit="${this.edit}"
+          ?edit="${edit}"
         ></grampsjs-children>`
       case 'sourceCitations':
         return html`<grampsjs-view-source-citations
           active
           .appState="${this.appState}"
-          ?edit="${this.edit}"
+          ?edit="${edit}"
           .grampsIds=${(this.data?.extended?.citations || [])
             .map(obj => obj.gramps_id)
             .filter(obj => Boolean(obj))}
@@ -825,7 +941,7 @@ export class GrampsjsObject extends GrampsjsAppStateMixin(LitElement) {
           .grampsIds=${(this.data?.extended?.notes || [])
             .map(obj => obj.gramps_id)
             .filter(obj => Boolean(obj))}
-          ?edit="${this.edit}"
+          ?edit="${edit}"
           numberOfNotes="${this.data?.note_list?.length || 0}"
           objType="${this._objectEndpoint}"
         ></grampsjs-view-object-notes>`
@@ -834,41 +950,45 @@ export class GrampsjsObject extends GrampsjsAppStateMixin(LitElement) {
           .appState="${this.appState}"
           .media=${this.data?.extended?.media}
           .mediaRef=${this.data?.media_list}
-          ?edit="${this.edit}"
+          ?edit="${edit}"
           ?editRect="${this.appState.permissions.canEdit}"
         ></grampsjs-gallery>`
+      case 'links':
+        return html`<grampsjs-urls
+          hasEdit
+          .appState=${this.appState}
+          .data=${this.data.urls || []}
+          ?edit=${edit}
+        ></grampsjs-urls>`
       case 'metadata':
         return html`
           ${this.data.attribute_list?.length > 0 ||
-          (this.edit && 'attribute_list' in this.data)
+          ((edit ||
+            (this._objectEndpoint === 'people' &&
+              this.appState.permissions?.canEdit)) &&
+            'attribute_list' in this.data)
             ? html` <h4>${this._('Attributes')}</h4>
                 <grampsjs-attributes
                   hasEdit
                   .appState="${this.appState}"
-                  ?edit="${this.edit}"
+                  ?edit="${edit}"
                   .data=${this.data.attribute_list ?? []}
                   attributeCategory="${this._objectsName.toLowerCase()}"
                 ></grampsjs-attributes>`
             : ''}
           ${this.data.address_list?.length > 0 ||
-          (this.edit && 'address_list' in this.data)
+          ((edit ||
+            (this._objectEndpoint === 'people' &&
+              this.appState.permissions?.canEdit)) &&
+            'address_list' in this.data)
             ? html`<h4>${this._('Addresses')}</h4>
                 <grampsjs-addresses
                   hasEdit
                   .appState="${this.appState}"
                   .data=${this.data.address_list ?? []}
                   .profile=${this.data?.profile?.addresses ?? []}
-                  ?edit="${this.edit}"
+                  ?edit="${edit}"
                 ></grampsjs-addresses>`
-            : ''}
-          ${this.data.urls?.length > 0 || (this.edit && 'urls' in this.data)
-            ? html`<h4>${this._('Internet')}</h4>
-                <grampsjs-urls
-                  hasEdit
-                  .appState="${this.appState}"
-                  .data=${this.data.urls ?? []}
-                  ?edit="${this.edit}"
-                ></grampsjs-urls>`
             : ''}
         `
       case 'associations':
@@ -877,7 +997,7 @@ export class GrampsjsObject extends GrampsjsAppStateMixin(LitElement) {
           .appState="${this.appState}"
           .data=${this.data?.person_ref_list || []}
           .extended=${this.data?.extended?.people || []}
-          ?edit="${this.edit}"
+          ?edit="${edit}"
         ></grampsjs-associations>`
       case 'participants':
         return html`<grampsjs-participants
@@ -891,7 +1011,7 @@ export class GrampsjsObject extends GrampsjsAppStateMixin(LitElement) {
           .appState="${this.appState}"
           .data=${this.data?.reporef_list}
           .extended=${this.data?.extended?.repositories}
-          ?edit=${this.edit}
+          ?edit=${edit}
         ></grampsjs-repositories>`
       case 'references':
         return html`<grampsjs-references
@@ -914,13 +1034,20 @@ export class GrampsjsObject extends GrampsjsAppStateMixin(LitElement) {
 
   _getTabs(edit) {
     if (edit) {
-      return Object.keys(_allTabs).filter(key =>
-        _allTabs[key].conditionEdit(this.data)
+      return Object.keys(_allTabs).filter(
+        key =>
+          _allTabs[key].conditionEdit(this.data) &&
+          (_allTabs[key].condition(this.data) ||
+            this._isPrimarySection(key) ||
+            this._addedSections.includes(key))
       )
     }
     return Object.keys(_allTabs).filter(
       key =>
-        _allTabs[key].condition(this.data) &&
+        (_allTabs[key].condition(this.data) ||
+          this._isPrimarySection(key) ||
+          (this._addedSections.includes(key) &&
+            _allTabs[key].conditionEdit(this.data))) &&
         (this._showReferences || key !== 'references') &&
         (key !== 'revisions' || this._showRevisions())
     )
@@ -942,6 +1069,7 @@ export class GrampsjsObject extends GrampsjsAppStateMixin(LitElement) {
   _handleNewTag() {
     this.dialogContent = html`
       <grampsjs-form-new-tag
+        ?disableString=${this.appState.permissions?.canAdd === false}
         .appState="${this.appState}"
         .data="${this.data.tag_list}"
         dialogTitle="${this._('Add Tag')}"

@@ -40,12 +40,14 @@ export const GrampsjsNewNoteMixin = superClass =>
       return {
         ...super.properties,
         objType: {type: String},
+        compact: {type: Boolean},
       }
     }
 
     constructor() {
       super()
       this.objType = ''
+      this.compact = false
     }
 
     get _noteDefaultType() {
@@ -68,6 +70,7 @@ export const GrampsjsNewNoteMixin = superClass =>
       return html`
         <p>
           <grampsjs-editor
+            ?localSave=${this.compact}
             @formdata:changed="${this.handleEditor}"
             @keydown="${e => e.stopImmediatePropagation()}"
             id="new-note-editor"
@@ -75,6 +78,17 @@ export const GrampsjsNewNoteMixin = superClass =>
           ></grampsjs-editor>
         </p>
 
+        ${this.compact
+          ? html`<details>
+              <summary>${this._('More details')}</summary>
+              ${this._renderNoteExtras()}
+            </details>`
+          : this._renderNoteExtras()}
+      `
+    }
+
+    _renderNoteExtras() {
+      return html`
         <grampsjs-form-select-type
           id="select-note-type"
           .appState="${this.appState}"

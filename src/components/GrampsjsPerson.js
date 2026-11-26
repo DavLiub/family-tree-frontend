@@ -9,9 +9,13 @@ import {
   mdiSearchWeb,
   mdiTimelineOutline,
   mdiMap,
+  mdiPencil,
 } from '@mdi/js'
 import {GrampsjsObject} from './GrampsjsObject.js'
 import {getSymbols} from '../symbols.js'
+import {getPersonNameDisplay} from './nameHistory.js'
+import {getSummaryEvent} from './personEventEdit.js'
+import {renderContextEventEditor} from './GrampsjsFormContextEvent.js'
 import './GrampsjsImg.js'
 import './GrampsjsEditGender.js'
 import './GrampsjsPersonRelationship.js'
@@ -106,6 +110,7 @@ export class GrampsjsPerson extends GrampsjsObject {
     return html`
       <h2>
         <grampsjs-edit-gender
+          .appState=${this.appState}
           ?edit="${this.edit}"
           gender="${this.data.gender}"
         ></grampsjs-edit-gender>
@@ -160,25 +165,19 @@ export class GrampsjsPerson extends GrampsjsObject {
   }
 
   _displayName() {
-    if (!this.data.profile) {
-      return ''
-    }
-    const surname = this.data.profile.name_surname || '…'
-    const suffix = this.data.profile.name_suffix || ''
-    const call = this.data?.primary_name?.call
-    let given = this.data.profile.name_given || call || '…'
-    const callIndex = call && call !== given ? given.search(call) : -1
-    given =
-      callIndex > -1
-        ? html`
-            ${given.substring(0, callIndex)}
-            <span class="given-name"
-              >${given.substring(callIndex, callIndex + call.length)}</span
-            >
-            ${given.substring(callIndex + call.length)}
-          `
-        : given
-    return html`${given} ${surname} ${suffix}`
+    const {main, birth} = getPersonNameDisplay(this.data, value =>
+      this._(value)
+    )
+    const call = this.data.primary_name?.call
+    const index = call
+      ? (this.data.primary_name?.first_name || '').indexOf(call)
+      : -1
+    const heading =
+      index >= 0
+        ? html`${main.slice(0, index)}<span class="given-name">${call}</span
+            >${main.slice(index + call.length)}`
+        : main || this._('Name not recorded')
+    return html`${heading}${birth ? html` (${birth})` : ''}`
   }
 
   _renderBirth() {
@@ -192,6 +191,7 @@ export class GrampsjsPerson extends GrampsjsObject {
         <i>${birthSymbol}</i>
         ${obj.date || ''} ${obj.place ? this._('in') : ''}
         ${obj.place_name || obj.place || ''}
+        ${this._renderSummaryEventEdit('birth')}
       </span>
     `
   }
@@ -207,8 +207,39 @@ export class GrampsjsPerson extends GrampsjsObject {
         <i>${deathSymbol}</i>
         ${obj.date || ''} ${obj.place ? this._('in') : ''}
         ${obj.place_name || obj.place || ''}
+        ${this._renderSummaryEventEdit('death')}
       </span>
     `
+  }
+
+  _renderSummaryEventEdit(kind) {
+    const event = getSummaryEvent(this.data, kind)
+    if (!event || !this.appState.permissions?.canEdit || this.preview) return ''
+    const label = this._(
+      kind === 'birth' ? 'Edit birth details' : 'Edit death details'
+    )
+    return html`<md-icon-button
+      aria-label=${label}
+      title=${label}
+      @click=${() => this._editSummaryEvent(event)}
+    >
+      <grampsjs-icon
+        path=${mdiPencil}
+        color="var(--mdc-theme-secondary)"
+      ></grampsjs-icon>
+    </md-icon-button>`
+  }
+
+  _editSummaryEvent(event) {
+    if (!this.appState.permissions?.canEdit) return
+    this.dialogContent = renderContextEventEditor(
+      this.appState,
+      event,
+      this._('Edit event'),
+      () => {
+        this.dialogContent = ''
+      }
+    )
   }
 
   _renderRelation() {
@@ -466,7 +497,11 @@ export class GrampsjsPerson extends GrampsjsObject {
   }
 
   renderSectionContent(sectionKey) {
-    if (sectionKey !== 'events' || this.edit) {
+    if (
+      sectionKey !== 'events' ||
+      this.edit ||
+      this._addedSections.includes('events')
+    ) {
       return super.renderSectionContent(sectionKey)
     }
 
@@ -527,9 +562,20 @@ export class GrampsjsPerson extends GrampsjsObject {
     return html`
       ${chips}
       <grampsjs-events
+        hasAdd
+        hasShare
         .appState="${this.appState}"
         .data=${data}
         .profile=${profile}
+        .hasReorder=${false}
+        .referenceIndices=${data.map(event =>
+          (this.data.event_ref_list || []).findIndex(
+            ref => ref.ref === event.handle
+          )
+        )}
+        .eventRef=${data.map(event =>
+          (this.data.event_ref_list || []).find(ref => ref.ref === event.handle)
+        )}
       ></grampsjs-events>
     `
   }

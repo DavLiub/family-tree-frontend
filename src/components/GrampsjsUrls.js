@@ -12,6 +12,11 @@ import {fixUrl} from '../urlUtil.js'
 import '@material/web/list/list-item.js'
 
 export class GrampsjsUrls extends GrampsjsEditableList {
+  constructor() {
+    super()
+    this.addLabel = 'Add link'
+  }
+
   row(obj, i) {
     return html`
       <md-list-item
@@ -40,6 +45,7 @@ export class GrampsjsUrls extends GrampsjsEditableList {
           path="${mdiOpenInNew}"
           color="var(--grampsjs-color-icon)"
         ></grampsjs-icon>
+        ${this._renderRowEdit(i, 'Edit link')}
       </md-list-item>
     `
   }
@@ -47,6 +53,8 @@ export class GrampsjsUrls extends GrampsjsEditableList {
   _handleAdd() {
     this.dialogContent = html`
       <grampsjs-form-edit-url
+        awaitSave
+        @object:saved="${this._handleDialogCancel}"
         new
         @object:save="${this._handleUrlSave}"
         @object:cancel="${this._handleDialogCancel}"
@@ -65,6 +73,8 @@ export class GrampsjsUrls extends GrampsjsEditableList {
     }
     this.dialogContent = html`
       <grampsjs-form-edit-url
+        awaitSave
+        @object:saved="${this._handleDialogCancel}"
         @object:save="${this._handleUrlSaveEdit}"
         @object:cancel="${this._handleDialogCancel}"
         .appState="${this.appState}"
@@ -84,22 +94,22 @@ export class GrampsjsUrls extends GrampsjsEditableList {
   _handleUrlSave(e) {
     fireEvent(this, 'edit:action', {
       action: 'addURL',
+      complete: e.detail.complete,
       data: e.detail.data,
     })
     e.preventDefault()
     e.stopPropagation()
-    this.dialogContent = ''
   }
 
   _handleUrlSaveEdit(e) {
     fireEvent(this, 'edit:action', {
       action: 'updateURL',
+      complete: e.detail.complete,
       data: e.detail.data,
       index: this._selectedIndex,
     })
     e.preventDefault()
     e.stopPropagation()
-    this.dialogContent = ''
   }
 
   _handleDialogCancel() {

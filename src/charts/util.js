@@ -16,10 +16,18 @@ export function formatChartName(profile, nameDisplayFormat) {
     : `${surname}, ${given}`
 }
 export const getImageUrl = (person, size, square = true) => {
-  if (!person.media_list || person.media_list.length === 0) {
+  if (!person?.media_list || person.media_list.length === 0) {
     return ''
   }
-  const [mediaRef] = person.media_list
+  const media = person.extended?.media
+  const mediaRef = Array.isArray(media)
+    ? person.media_list.find(ref =>
+        media.some(
+          item => item?.handle === ref.ref && item.mime?.startsWith('image/')
+        )
+      )
+    : person.media_list[0]
+  if (!mediaRef) return ''
   const rect = normalizeRect(mediaRef.rect)
   if (!rect) {
     return getThumbnailUrl(mediaRef.ref, size, square)

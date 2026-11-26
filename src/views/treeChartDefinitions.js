@@ -30,7 +30,7 @@ import {chartNameDisplayFormat, menuSelectionHandler} from '../util.js'
 // Chart components and filter rules also count the selected person's
 // generation.
 
-const treeExtend = 'event_ref_list,primary_parent_family,family_list'
+const treeExtend = 'event_ref_list,primary_parent_family,family_list,media_list'
 
 function treeRules(grampsId, ancestorGenerations, descendantGenerations) {
   return {
@@ -256,12 +256,13 @@ export const chartDefinitions = {
       // The chart also shows other parent families, such as adoptive parents
       extend: `${treeExtend},parent_family_list`,
     }),
-    render: ({grampsId, values, data, canEdit}) => html`
+    render: ({grampsId, values, data, canEdit, appState}) => html`
       <grampsjs-relationship-chart
         grampsId=${grampsId}
         nameDisplayFormat=${values.nameDisplayFormat}
         ?canEdit="${canEdit}"
         .data=${data}
+        .appState=${appState}
       >
       </grampsjs-relationship-chart>
     `,

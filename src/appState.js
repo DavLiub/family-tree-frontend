@@ -295,6 +295,7 @@ export function getInitialAppState() {
     permissions: {
       canAdd: false,
       canEdit: false,
+      canDelete: false,
       canViewPrivate: false,
       canManageUsers: false,
       canUseChat: false,
@@ -426,6 +427,7 @@ export function appStateUpdatePermissions(appState) {
   const permissions = {
     canAdd: rawPermissions.includes('AddObject'),
     canEdit: rawPermissions.includes('EditObject'),
+    canDelete: rawPermissions.includes('DeleteObject'),
     canViewPrivate: rawPermissions.includes('ViewPrivate'),
     canManageUsers: rawPermissions.includes('EditOtherUser'),
     canUseChat: rawPermissions.includes('UseChat'),

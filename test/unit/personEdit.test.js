@@ -38,6 +38,7 @@ describe('basic person fields', () => {
     expect(getPersonEditFields(makePerson())).toEqual({
       firstName: 'Alex',
       surnames: ['Example', 'Sample'],
+      patronymics: [''],
       gender: 0,
     })
   })
@@ -46,6 +47,7 @@ describe('basic person fields', () => {
     expect(getPersonEditFields({})).toEqual({
       firstName: '',
       surnames: [''],
+      patronymics: [''],
       gender: 2,
     })
   })
@@ -188,4 +190,26 @@ describe('save person using appState', () => {
       await savePersonEdit(appState, person, getPersonEditFields(person))
     ).toEqual({error: 'Not authorized'})
   })
+})
+
+it('edits a native patronymic without changing birth names or surname metadata', () => {
+  const person = makePerson()
+  const patronymic = {
+    _class: 'Surname',
+    surname: 'Old',
+    origintype: 'Patronymic',
+    private: true,
+    citation_list: ['keep'],
+  }
+  person.primary_name.surname_list.splice(1, 0, patronymic)
+  const fields = getPersonEditFields(person)
+  expect(fields.patronymics).toEqual(['Old'])
+  expect(fields.surnames).toEqual(['Example', 'Sample'])
+  fields.patronymics[0] = 'New'
+  const saved = buildPersonEditPayload(person, fields)
+  expect(saved.primary_name.surname_list[1]).toEqual({
+    ...patronymic,
+    surname: 'New',
+  })
+  expect(saved.alternate_names).toEqual(person.alternate_names)
 })

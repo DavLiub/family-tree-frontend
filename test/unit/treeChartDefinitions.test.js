@@ -1,3 +1,4 @@
+import {render} from 'lit'
 import {describe, it, expect, vi} from 'vitest'
 import {
   chartDataUrl,
@@ -65,10 +66,40 @@ describe('chart definitions', () => {
       {name: 'DegreesOfSeparation', values: ['I1', 3]},
     ])
     expect(extendOf(url)).toBe(
-      'event_ref_list,primary_parent_family,family_list,parent_family_list'
+      'event_ref_list,primary_parent_family,family_list,media_list,parent_family_list'
     )
     expect(url).toContain('locale=de')
   })
+
+  it.each(['ancestor', 'descendant', 'hourglass', 'relationship'])(
+    'passes the same application state to %s person cards',
+    kind => {
+      const definition = chartDefinitions[kind]
+      const appState = {
+        permissions: {canEdit: true},
+        i18n: {lang: 'ru', strings: {}},
+        settings: {},
+      }
+      const root = document.createElement('div')
+      render(
+        definition.render({
+          grampsId: 'TEST-I1',
+          values: chartSettingValues(definition, {}),
+          data: [],
+          canEdit: false,
+          appState,
+          state: {},
+        }),
+        root
+      )
+      const chart = root.querySelector(
+        'grampsjs-tree-chart, grampsjs-relationship-chart'
+      )
+      expect(chart.appState).toBe(appState)
+      expect(chart.appState.permissions.canEdit).toBe(true)
+      expect(chart.canEdit).toBeFalsy()
+    }
+  )
 
   it('only allows adding people to the charts that have cards', () => {
     const editable = Object.entries(chartDefinitions)

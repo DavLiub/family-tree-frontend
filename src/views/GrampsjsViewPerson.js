@@ -51,6 +51,11 @@ export class GrampsjsViewPerson extends GrampsjsViewObject {
     }
   }
 
+  handleContextSaved() {
+    super.handleContextSaved()
+    if (this.active && this._timelineData.length) this._fetchTimeline()
+  }
+
   _fetchTimeline() {
     const handle = this._data?.handle
     if (!handle) return

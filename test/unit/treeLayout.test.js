@@ -59,11 +59,11 @@ describe('layoutAncestors', () => {
   it('places generations in columns to the right of the root person', () => {
     expect(positions(layout)).toEqual([
       {key: 'p', handle: 'R', generation: 0, x: 0, y: 0},
-      {key: 'pf', handle: 'F', generation: 1, x: 220, y: -71.25},
-      {key: 'pm', handle: 'M', generation: 1, x: 220, y: 71.25},
-      {key: 'pff', handle: 'FF', generation: 2, x: 440, y: -118.75},
-      {key: 'pfm', handle: 'FM', generation: 2, x: 440, y: -23.75},
-      {key: 'pmm', handle: 'MM', generation: 2, x: 440, y: 71.25},
+      {key: 'pf', handle: 'F', generation: 1, x: 280, y: -81.75},
+      {key: 'pm', handle: 'M', generation: 1, x: 280, y: 81.75},
+      {key: 'pff', handle: 'FF', generation: 2, x: 560, y: -136.25},
+      {key: 'pfm', handle: 'FM', generation: 2, x: 560, y: -27.25},
+      {key: 'pmm', handle: 'MM', generation: 2, x: 560, y: 81.75},
     ])
   })
 
@@ -79,10 +79,10 @@ describe('layoutAncestors', () => {
 
   it('includes the boxes and horizontal padding in the bounds', () => {
     expect(layout.bounds).toEqual({
-      xMin: -115,
-      xMax: 555,
-      yMin: -163.75,
-      yMax: 116.25,
+      xMin: -145,
+      xMax: 705,
+      yMin: -188.25,
+      yMax: 133.75,
     })
   })
 
@@ -103,9 +103,9 @@ describe('layoutDescendants', () => {
   it('places generations in columns to the left of the root person', () => {
     expect(positions(layout)).toEqual([
       {key: 'p', handle: 'R', generation: 0, x: 0, y: 0},
-      {key: 'pc0', handle: 'K1', generation: -1, x: -250, y: -47.5},
-      {key: 'pc1', handle: 'K2', generation: -1, x: -250, y: 47.5},
-      {key: 'pc0c0', handle: undefined, generation: -2, x: -500, y: -47.5},
+      {key: 'pc0', handle: 'K1', generation: -1, x: -310, y: -54.5},
+      {key: 'pc1', handle: 'K2', generation: -1, x: -310, y: 54.5},
+      {key: 'pc0c0', handle: undefined, generation: -2, x: -620, y: -54.5},
     ])
   })
 
@@ -120,10 +120,10 @@ describe('layoutDescendants', () => {
 
   it('includes the boxes and horizontal padding in the bounds', () => {
     expect(layout.bounds).toEqual({
-      xMin: -615,
-      xMax: 115,
-      yMin: -92.5,
-      yMax: 92.5,
+      xMin: -765,
+      xMax: 145,
+      yMin: -106.5,
+      yMax: 106.5,
     })
   })
 })
@@ -138,10 +138,10 @@ describe('layoutHourglass', () => {
   it('places ancestors to the right and descendants to the left', () => {
     expect(positions(layout)).toEqual([
       {key: 'p', handle: 'R', generation: 0, x: 0, y: 0},
-      {key: 'pf', handle: 'F', generation: 1, x: 250, y: -47.5},
-      {key: 'pm', handle: 'M', generation: 1, x: 250, y: 47.5},
-      {key: 'pc0', handle: 'K1', generation: -1, x: -250, y: -47.5},
-      {key: 'pc1', handle: 'K2', generation: -1, x: -250, y: 47.5},
+      {key: 'pf', handle: 'F', generation: 1, x: 310, y: -54.5},
+      {key: 'pm', handle: 'M', generation: 1, x: 310, y: 54.5},
+      {key: 'pc0', handle: 'K1', generation: -1, x: -310, y: -54.5},
+      {key: 'pc1', handle: 'K2', generation: -1, x: -310, y: 54.5},
     ])
   })
 
@@ -157,10 +157,10 @@ describe('layoutHourglass', () => {
 
   it('includes both halves in the bounds', () => {
     expect(layout.bounds).toEqual({
-      xMin: -365,
-      xMax: 365,
-      yMin: -92.5,
-      yMax: 92.5,
+      xMin: -455,
+      xMax: 455,
+      yMin: -106.5,
+      yMax: 106.5,
     })
   })
 
@@ -171,8 +171,8 @@ describe('layoutHourglass', () => {
     })
     expect(positions(shallow)).toEqual([
       {key: 'p', handle: 'R', generation: 0, x: 0, y: 0},
-      {key: 'pc0', handle: 'K1', generation: -1, x: -220, y: -47.5},
-      {key: 'pc1', handle: 'K2', generation: -1, x: -220, y: 47.5},
+      {key: 'pc0', handle: 'K1', generation: -1, x: -280, y: -54.5},
+      {key: 'pc1', handle: 'K2', generation: -1, x: -280, y: 54.5},
     ])
     expect(shallow.links.every(l => l.source === shallow.nodes[0])).toBe(true)
   })

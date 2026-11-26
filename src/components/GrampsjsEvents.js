@@ -9,6 +9,13 @@ import {
   eventTypeIconPath,
 } from '../util.js'
 import {renderIcon} from '../objectRender.js'
+import {loadContextObject} from './contextEdit.js'
+import {mdiPencil, mdiAccountEdit} from '@mdi/js'
+import {renderContextEventEditor} from './GrampsjsFormContextEvent.js'
+import {renderRecordDelete} from './GrampsjsRecordDelete.js'
+import {renderSectionCreateActions} from './sectionActions.js'
+import '@material/web/select/outlined-select.js'
+import '@material/web/select/select-option.js'
 import './GrampsjsFormSelectObject.js'
 import './GrampsjsFormEventRef.js'
 import './GrampsjsFormNewEvent.js'
@@ -24,6 +31,18 @@ export class GrampsjsEvents extends GrampsjsEditableList {
           --md-list-item-top-space: 16px;
           --md-list-item-bottom-space: 16px;
         }
+        .event-create-actions {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 0.5rem;
+        }
+        md-outlined-select {
+          inline-size: 16rem;
+          max-inline-size: 100%;
+          flex: 0 1 16rem;
+          min-inline-size: min(16rem, 100%);
+        }
       `,
     ]
   }
@@ -32,6 +51,7 @@ export class GrampsjsEvents extends GrampsjsEditableList {
     return {
       profile: {type: Array},
       eventRef: {type: Array},
+      referenceIndices: {type: Array},
       dialogContent: {type: String},
       useSummary: {type: Boolean},
       sorted: {type: Boolean},
@@ -44,14 +64,66 @@ export class GrampsjsEvents extends GrampsjsEditableList {
     super()
     this.profile = []
     this.eventRef = []
+    this.referenceIndices = []
     this.objType = 'Event'
+    this.addLabel = 'Add event'
     this.useSummary = false
     this.sorted = false
     this.hideAge = false
     this.hasAdd = false
-    this.hasShare = true
+    this.hasShare = false
     this.hasReorder = true
     this.defaultRole = 'Primary'
+  }
+
+  _sharedEndpoint() {
+    return 'events'
+  }
+
+  _renderRowRemove(index) {
+    return this.eventRef?.[index]?.ref === this.data[index]?.handle
+      ? super._renderRowRemove(index)
+      : ''
+  }
+
+  _canRemoveIndex(index) {
+    return (
+      super._canRemoveIndex(index) &&
+      this.eventRef?.[index]?.ref === this.data[index]?.handle
+    )
+  }
+
+  _renderCreateActions() {
+    const permissions = this.appState.permissions || {}
+    if (!permissions.canEdit) return ''
+    const types =
+      this.defaultRole === 'Family'
+        ? ['Marriage', 'Divorce']
+        : ['Birth', 'Death']
+    return html`<div class="event-create-actions">
+      ${this.hasAdd && permissions.canAdd !== false
+        ? html`<md-outlined-select
+            label=${this._('Add event')}
+            @change=${event => {
+              const type = event.target.value
+              event.target.value = ''
+              this._handleAdd(type === '__other__' ? '' : type)
+            }}
+          >
+            ${[...types, '__other__'].map(
+              type => html`<md-select-option value=${type}>
+                <div slot="headline">
+                  ${this._(type === '__other__' ? 'Other event' : type)}
+                </div>
+              </md-select-option>`
+            )}
+          </md-outlined-select>`
+        : ''}
+      ${renderSectionCreateActions(this, {
+        attach: this.hasShare,
+        onAttach: () => this._handleShare(),
+      })}
+    </div>`
   }
 
   row(obj, i) {
@@ -96,6 +168,46 @@ export class GrampsjsEvents extends GrampsjsEditableList {
               >${objProfile.profile.age}</span
             >`
           : ''}
+        <div slot="end" class="record-actions">
+          ${this.appState.permissions?.canEdit
+            ? html`
+                <md-icon-button
+                  slot="end"
+                  aria-label=${this._('Edit event')}
+                  title=${this._('Edit event')}
+                  @click=${e => {
+                    e.stopPropagation()
+                    this._editEvent(obj)
+                  }}
+                >
+                  <grampsjs-icon
+                    path=${mdiPencil}
+                    color="var(--mdc-theme-secondary)"
+                  ></grampsjs-icon>
+                </md-icon-button>
+              `
+            : ''}
+          ${this._renderRowRemove(j)}
+          ${renderRecordDelete(this, 'events', obj)}${this._renderRowReorder(j)}
+          ${this.appState.permissions?.canEdit && this.eventRef?.[j]
+            ? html`
+                <md-icon-button
+                  slot="end"
+                  aria-label=${this._('Edit event role')}
+                  title=${this._('Edit event role')}
+                  @click=${e => {
+                    e.stopPropagation()
+                    this._handleEditRole(j)
+                  }}
+                >
+                  <grampsjs-icon
+                    path=${mdiAccountEdit}
+                    color="var(--mdc-theme-secondary)"
+                  ></grampsjs-icon>
+                </md-icon-button>
+              `
+            : ''}
+        </div>
       </md-list-item>
     `
   }
@@ -181,7 +293,39 @@ export class GrampsjsEvents extends GrampsjsEditableList {
   }
 
   _handleEdit() {
-    const data = this.eventRef[this._selectedIndex]
+    const event = this.sortData([...this.data])[this._selectedIndex]
+    if (event) this._editEvent(event)
+  }
+
+  async _editEvent(event) {
+    if (!this.appState.permissions?.canEdit || this._openingEvent) return
+    this._openingEvent = true
+    try {
+      // Timeline entries omit the structured date and place reference.
+      // Always load the real event before presenting editable fields.
+      const fresh = await loadContextObject(
+        this.appState,
+        'events',
+        event.handle
+      )
+      this.dialogContent = renderContextEventEditor(
+        this.appState,
+        fresh,
+        this._('Edit event'),
+        () => {
+          this.dialogContent = ''
+        }
+      )
+    } catch (error) {
+      fireEvent(this, 'grampsjs:error', {message: this._(error.message)})
+    } finally {
+      this._openingEvent = false
+    }
+  }
+
+  _handleEditRole(index) {
+    this._selectedIndex = index
+    const data = this.eventRef[index]
     this.dialogContent = html`
       <grampsjs-form-eventref
         id="edit-event-ref"
@@ -196,9 +340,20 @@ export class GrampsjsEvents extends GrampsjsEditableList {
     `
   }
 
-  _handleAdd() {
+  _handleAdd(preset) {
+    const type = typeof preset === 'string' ? preset : ''
+    this._newEventHandle = makeHandle()
     this.dialogContent = html`
       <grampsjs-form-new-event
+        compact
+        awaitSave
+        initialType=${type}
+        .data=${{
+          _class: 'Event',
+          ...(type ? {type} : {}),
+          role: this.defaultRole,
+        }}
+        @object:saved=${this._handleDialogCancel}
         defaultRole="${this.defaultRole}"
         @object:save="${this._handleNewEventSave}"
         @object:cancel="${this._handleDialogCancel}"
@@ -210,14 +365,14 @@ export class GrampsjsEvents extends GrampsjsEditableList {
   }
 
   _handleNewEventSave(e) {
-    const handle = makeHandle()
+    this._newEventHandle ||= makeHandle()
     fireEvent(this, 'edit:action', {
       action: 'newEvent',
-      data: {handle, ...e.detail.data},
+      complete: e.detail.complete,
+      data: {...e.detail.data, handle: this._newEventHandle},
     })
     e.preventDefault()
     e.stopPropagation()
-    this.dialogContent = ''
   }
 
   _handleEventRefSave(e) {
@@ -231,7 +386,7 @@ export class GrampsjsEvents extends GrampsjsEditableList {
     fireEvent(this, 'edit:action', {
       action: 'updateEventRef',
       data: e.detail.data,
-      index: this._selectedIndex,
+      index: this.referenceIndices[this._selectedIndex] ?? this._selectedIndex,
     })
     e.preventDefault()
     e.stopPropagation()
@@ -243,9 +398,10 @@ export class GrampsjsEvents extends GrampsjsEditableList {
   }
 
   _handleDelete() {
+    if (!this._canRemoveIndex(this._selectedIndex)) return
     fireEvent(this, 'edit:action', {
       action: 'delEvent',
-      index: this._selectedIndex,
+      index: this.referenceIndices[this._selectedIndex] ?? this._selectedIndex,
     })
   }
 

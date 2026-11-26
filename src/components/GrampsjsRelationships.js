@@ -10,6 +10,7 @@ import {
   mdiLinkVariantPlus,
 } from '@mdi/js'
 
+import {renderRecordDelete} from './GrampsjsRecordDelete.js'
 import {sharedStyles} from '../SharedStyles.js'
 import {fireEvent} from '../util.js'
 import './GrampsjsConnectedChildren.js'
@@ -18,6 +19,7 @@ import './GrampsjsFormAddPersonToFamily.js'
 import './GrampsjsFormNewParentFamily.js'
 import './GrampsjsFormNewPartnerFamily.js'
 import './GrampsjsIcon.js'
+import './GrampsjsFormFamilyContext.js'
 import {GrampsjsAppStateMixin} from '../mixins/GrampsjsAppStateMixin.js'
 
 export class GrampsjsRelationships extends GrampsjsAppStateMixin(LitElement) {
@@ -32,6 +34,8 @@ export class GrampsjsRelationships extends GrampsjsAppStateMixin(LitElement) {
         h4 {
           display: flex;
           align-items: center;
+          flex-wrap: wrap;
+          gap: 8px;
         }
 
         .number {
@@ -65,7 +69,7 @@ export class GrampsjsRelationships extends GrampsjsAppStateMixin(LitElement) {
           height: 40px;
         }
 
-        p.button-list {
+        .button-list {
           display: flex;
           gap: 12px;
           flex-wrap: wrap;
@@ -118,6 +122,13 @@ export class GrampsjsRelationships extends GrampsjsAppStateMixin(LitElement) {
     const totalParent = parentFamilies.length
     const totalPartner = this.families.length
     return html`
+      ${this.appState.permissions?.canEdit
+        ? this._renderAddParentFamilyButtons()
+        : ''}
+      ${this.appState.permissions?.canEdit &&
+      this.appState.permissions?.canAdd !== false
+        ? this._renderAddPartnerFamilyButton()
+        : ''}
       ${parentFamilies.map((familyProfile, i) =>
         this._renderFamily(
           familyProfile,
@@ -125,7 +136,7 @@ export class GrampsjsRelationships extends GrampsjsAppStateMixin(LitElement) {
             ? this._('Parents')
             : html`${this._('Parents')} <span class="number">${i + 1}</span>`,
           this._('Siblings'),
-          this.edit
+          this.appState.permissions?.canEdit
             ? html`
                 <div class="edit-buttons">
                   ${totalParent > 1
@@ -136,23 +147,18 @@ export class GrampsjsRelationships extends GrampsjsAppStateMixin(LitElement) {
                         () => this._moveParentFamily(i, 1)
                       )
                     : ''}
-                  ${this._renderRemoveButton(
-                    () => this._removeParentFamily(familyProfile.handle),
-                    this._('Remove person as child of these parents')
-                  )}
                 </div>
               `
             : ''
         )
       )}
-      ${this.edit ? this._renderAddParentFamilyButtons() : ''}
       ${this.families.map((familyProfile, i) =>
         this._renderFamily(
           familyProfile,
           html`${this._('Partner')}
           ${totalPartner < 2 ? '' : html`<span class="number">${i + 1}</span>`}`,
           this._('Children'),
-          this.edit
+          this.appState.permissions?.canEdit
             ? html`
                 <div class="edit-buttons">
                   ${totalPartner > 1
@@ -163,23 +169,23 @@ export class GrampsjsRelationships extends GrampsjsAppStateMixin(LitElement) {
                         () => this._movePartnerFamily(i, 1)
                       )
                     : ''}
-                  ${this._renderRemoveButton(
-                    () => this._removePartnerFamily(familyProfile.handle),
-                    this._('Remove person as parent in this family')
-                  )}
                 </div>
               `
             : ''
         )
       )}
-      ${this.edit ? this._renderAddPartnerFamilyButton() : ''}
       ${this.dialogContent}
     `
   }
 
   _renderRemoveButton(onClick, title) {
     return html`
-      <md-icon-button class="edit" @click="${onClick}" title="${title}">
+      <md-icon-button
+        class="edit"
+        @click="${onClick}"
+        title="${title}"
+        aria-label="${title}"
+      >
         <grampsjs-icon
           path="${mdiLinkOff}"
           color="var(--mdc-theme-secondary)"
@@ -188,30 +194,47 @@ export class GrampsjsRelationships extends GrampsjsAppStateMixin(LitElement) {
     `
   }
 
-  _removeParentFamily(handle) {
-    const parentFamilies = [
-      this.primaryParentFamily,
-      ...this.otherParentFamilies,
-    ].filter(f => Object.keys(f).length > 0)
-    fireEvent(this, 'edit:action', {
-      action: 'updateProp',
-      data: {
-        parent_family_list: parentFamilies
-          .filter(f => f.handle !== handle)
-          .map(f => f.handle),
-      },
-    })
-  }
-
-  _removePartnerFamily(handle) {
-    fireEvent(this, 'edit:action', {
-      action: 'updateProp',
-      data: {
-        family_list: this.families
-          .filter(f => f.handle !== handle)
-          .map(f => f.handle),
-      },
-    })
+  _openFamilyEditor(
+    profile,
+    disconnect = false,
+    personHandle = this.personHandle,
+    relationshipOnly = false
+  ) {
+    if (!this.appState.permissions?.canEdit) return
+    const family = [...this.familyList, ...this.parentFamilyList].find(
+      item => item.handle === profile.handle
+    )
+    if (!family) return
+    const childIndex = (family.child_ref_list || []).findIndex(
+      ref => ref.ref === personHandle
+    )
+    const child = profile.children?.[childIndex]
+    const personLabel = child
+      ? [child.name_given, child.name_surname].filter(Boolean).join(' ')
+      : this.grampsId
+    this.dialogContent = html`
+      <grampsjs-form-family-context
+        .appState=${this.appState}
+        .family=${family}
+        .personHandle=${personHandle}
+        .personLabel=${personLabel}
+        ?relationshipOnly=${relationshipOnly}
+        .familyLabel=${[profile.father, profile.mother]
+          .map(person =>
+            [person?.name_given, person?.name_surname].filter(Boolean).join(' ')
+          )
+          .filter(Boolean)
+          .join(' / ')}
+        ?disconnect=${disconnect}
+        dialogTitle=${this._(
+          disconnect
+            ? 'Disconnect from this family'
+            : 'Edit family relationships'
+        )}
+        @object:saved=${this._handleDialogCancel}
+        @object:cancel=${this._handleDialogCancel}
+      ></grampsjs-form-family-context>
+    `
   }
 
   _renderAddParentFamilyButtons() {
@@ -228,14 +251,19 @@ export class GrampsjsRelationships extends GrampsjsAppStateMixin(LitElement) {
             slot="icon"
           ></grampsjs-icon>
         </md-outlined-button>
-        <md-outlined-button class="edit" @click="${this._handleAddNewParents}">
-          ${this._('Add a new set of parents')}
-          <grampsjs-icon
-            path="${mdiAccountMultiplePlus}"
-            color="var(--mdc-theme-secondary)"
-            slot="icon"
-          ></grampsjs-icon>
-        </md-outlined-button>
+        ${this.appState.permissions?.canAdd !== false
+          ? html`<md-outlined-button
+              class="edit"
+              @click="${this._handleAddNewParents}"
+            >
+              ${this._('Add a new set of parents')}
+              <grampsjs-icon
+                path="${mdiAccountMultiplePlus}"
+                color="var(--mdc-theme-secondary)"
+                slot="icon"
+              ></grampsjs-icon>
+            </md-outlined-button>`
+          : ''}
       </p>
     `
   }
@@ -406,6 +434,21 @@ export class GrampsjsRelationships extends GrampsjsAppStateMixin(LitElement) {
         ${parentTitle}
         ${this._renderFamilyBtn(familyProfile.gramps_id)}${reorderButtons}
       </h4>
+      ${this.appState.permissions?.canEdit
+        ? html`<p class="button-list">
+            <md-outlined-button
+              @click=${() => this._openFamilyEditor(familyProfile)}
+            >
+              ${this._('Edit family relationships')}
+            </md-outlined-button>
+            <md-outlined-button
+              @click=${() => this._openFamilyEditor(familyProfile, true)}
+            >
+              ${this._('Disconnect from this family')}
+            </md-outlined-button>
+            ${renderRecordDelete(this, 'families', familyProfile)}
+          </p>`
+        : ''}
       <grampsjs-connected-parents
         familyGrampsId="${familyProfile.gramps_id}"
         .profile="${familyProfile}"
@@ -452,10 +495,27 @@ export class GrampsjsRelationships extends GrampsjsAppStateMixin(LitElement) {
             <grampsjs-connected-children
               familyGrampsId="${profile.gramps_id}"
               .profile=${profile?.children || []}
-              .data=${family.child_ref_list}
+              .data=${family?.child_ref_list || []}
               .appState="${this.appState}"
               highlightId="${this.grampsId}"
             ></grampsjs-connected-children>
+            ${this.appState.permissions?.canEdit
+              ? html` <div class="button-list">
+                  ${(profile.children || []).map((child, i) => {
+                    const ref = family?.child_ref_list?.[i]
+                    if (!ref || ref.ref === this.personHandle) return ''
+                    const name = [child.name_given, child.name_surname]
+                      .filter(Boolean)
+                      .join(' ')
+                    return html`<md-outlined-button
+                      @click=${() =>
+                        this._openFamilyEditor(profile, false, ref.ref, true)}
+                      >${this._('Edit relationship')}:
+                      ${name}</md-outlined-button
+                    >`
+                  })}
+                </div>`
+              : ''}
           `
         : ''}
     `

@@ -1,17 +1,23 @@
 import {html, css} from 'lit'
 
-import {mdiLinkOff, mdiLinkPlus, mdiPlus} from '@mdi/js'
+import {mdiLinkOff, mdiPencil} from '@mdi/js'
 
 import '@material/web/button/text-button'
 import '@material/web/iconbutton/icon-button.js'
 
+import {renderRecordDelete} from '../components/GrampsjsRecordDelete.js'
 import {GrampsjsViewObjectsDetail} from './GrampsjsViewObjectsDetail.js'
 import '../components/GrampsjsNoteContent.js'
 import '../components/GrampsjsFormNoteRef.js'
 import '../components/GrampsjsFormNewNote.js'
+import '../components/GrampsjsFormContextNote.js'
 import '../components/GrampsjsIcon.js'
 import '../components/GrampsjsTooltip.js'
 import {fireEvent, makeHandle} from '../util.js'
+import {
+  confirmSectionRemoval,
+  renderSectionCreateActions,
+} from '../components/sectionActions.js'
 
 const BASE_DIR = ''
 
@@ -37,6 +43,10 @@ export class GrampsjsViewObjectNotes extends GrampsjsViewObjectsDetail {
 
         div.note-edit-meta {
           margin-bottom: 1.2em;
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 4px;
         }
       `,
     ]
@@ -98,29 +108,30 @@ export class GrampsjsViewObjectNotes extends GrampsjsViewObjectsDetail {
     return html`${skeletonNotes}`
   }
 
+  renderContent() {
+    return html`${this.renderEdit()}
+    ${this.loading ? this.renderLoading() : this.renderElements()}
+    ${this.dialogContent}`
+  }
+
   renderEdit() {
-    return html`
-      <div>
-        <md-icon-button class="edit" @click="${this._handleShareClick}">
-          <grampsjs-icon
-            path="${mdiLinkPlus}"
-            color="var(--mdc-theme-secondary)"
-          ></grampsjs-icon>
-        </md-icon-button>
-        <md-icon-button class="edit" @click="${this._handleAddClick}">
-          <grampsjs-icon
-            path="${mdiPlus}"
-            color="var(--mdc-theme-secondary)"
-          ></grampsjs-icon>
-        </md-icon-button>
-        ${this.dialogContent}
-      </div>
-    `
+    return renderSectionCreateActions(this, {
+      add: true,
+      attach: true,
+      newObject: true,
+      addLabel: 'Add note',
+      onAdd: () => this._handleAddClick(),
+      onAttach: () => this._handleShareClick(),
+    })
   }
 
   _handleAddClick() {
+    this._newNoteHandle = makeHandle()
     this.dialogContent = html`
       <grampsjs-form-new-note
+        compact
+        awaitSave
+        @object:saved=${this._handleNoteCancel}
         @object:save="${this._handleNewNoteSave}"
         @object:cancel="${this._handleNoteCancel}"
         .appState="${this.appState}"
@@ -163,9 +174,23 @@ export class GrampsjsViewObjectNotes extends GrampsjsViewObjectsDetail {
             </md-text-button>
           </div>`}
       <div class="note-edit-meta">
-        ${this.edit
+        ${this.appState.permissions?.canEdit
+          ? html`
+              <md-text-button @click=${() => this._editNote(obj)}>
+                <grampsjs-icon
+                  slot="icon"
+                  path=${mdiPencil}
+                  color="var(--mdc-theme-secondary)"
+                ></grampsjs-icon>
+                ${this._('Edit note text')}
+              </md-text-button>
+            `
+          : ''}
+        ${this.appState.permissions?.canEdit
           ? html`
               <md-icon-button
+                aria-label=${this._('Detach from person')}
+                title=${this._('Detach from person')}
                 @click="${() => this._handleNoteRefDel(obj.handle)}"
                 id="del-note-${obj.handle}"
               >
@@ -178,27 +203,44 @@ export class GrampsjsViewObjectNotes extends GrampsjsViewObjectsDetail {
               </md-icon-button>
               <grampsjs-tooltip
                 for="del-note-${obj.handle}"
-                content="${this._('Remove note')}"
+                content="${this._('Detach from person')}"
               ></grampsjs-tooltip>
             `
           : ''}
+        ${renderRecordDelete(this, 'notes', obj)}
       </div>
     `
   }
 
+  _editNote(note) {
+    if (!this.appState.permissions?.canEdit) return
+    this.dialogContent = html`<grampsjs-form-context-note
+      .appState=${this.appState}
+      handle=${note.handle}
+      .data=${structuredClone({text: note.text})}
+      dialogTitle=${this._('Edit note text')}
+      @object:saved=${() => {
+        this.dialogContent = ''
+      }}
+      @object:cancel=${this._handleNoteCancel}
+    ></grampsjs-form-context-note>`
+  }
+
   _handleNoteRefDel(handle) {
-    fireEvent(this, 'edit:action', {action: 'delNoteRef', handle})
+    confirmSectionRemoval(this, () =>
+      fireEvent(this, 'edit:action', {action: 'delNoteRef', handle})
+    )
   }
 
   _handleNewNoteSave(e) {
-    const handle = makeHandle()
+    this._newNoteHandle ||= makeHandle()
     fireEvent(this, 'edit:action', {
       action: 'newNote',
-      data: {handle, ...e.detail.data},
+      complete: e.detail.complete,
+      data: {...e.detail.data, handle: this._newNoteHandle},
     })
     e.preventDefault()
     e.stopPropagation()
-    this.dialogContent = ''
   }
 
   _handleNoteRefSave(e) {

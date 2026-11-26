@@ -144,12 +144,12 @@ describe('TreeChart', () => {
     const shape = () => triangle().querySelector('path')
     chart.update(layout, {...size, childrenTriangle: true})
     // 8px from the colour stripe on the left and from the box on the right
-    expect(triangle().getAttribute('transform')).toBe('translate(-127,0)')
+    expect(triangle().getAttribute('transform')).toBe('translate(-157,0)')
     expect(shape().getAttribute('d')).toBe(mdiChevronLeft)
     const element = triangle()
     chart.update(layout, {...size, childrenTriangle: true, orientation: 'RTL'})
     expect(triangle()).toBe(element)
-    expect(triangle().getAttribute('transform')).toBe('translate(123,0)')
+    expect(triangle().getAttribute('transform')).toBe('translate(153,0)')
     expect(shape().getAttribute('d')).toBe(mdiChevronRight)
     chart.update(layout, size)
     expect(triangle()).toBeNull()
@@ -392,9 +392,13 @@ describe('TreeChart', () => {
     expect(
       chart.node.querySelector('#triangle-children path').getAttribute('fill')
     ).toBe('blue')
-    expect(box().getAttribute('fill')).toBe('white')
+    expect(box().getAttribute('fill')).toBe(
+      'color-mix(in srgb, var(--color-girl) 22%, white)'
+    )
     chart.update(layout, {...size, palette: {...palette, personBox: 'ivory'}})
-    expect(box().getAttribute('fill')).toBe('ivory')
+    expect(box().getAttribute('fill')).toBe(
+      'color-mix(in srgb, var(--color-girl) 22%, ivory)'
+    )
   })
 
   it('clears people and links but keeps the zoom', () => {

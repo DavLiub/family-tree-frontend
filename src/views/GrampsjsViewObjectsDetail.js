@@ -30,6 +30,19 @@ export class GrampsjsViewObjectsDetail extends GrampsjsView {
     this.dialogContent = ''
     this._data = []
     this.edit = false
+    this._boundContextSaved = () => {
+      if (this.active) this._updateData()
+    }
+  }
+
+  connectedCallback() {
+    super.connectedCallback()
+    this.addEventListener('context:saved', this._boundContextSaved)
+  }
+
+  disconnectedCallback() {
+    this.removeEventListener('context:saved', this._boundContextSaved)
+    super.disconnectedCallback()
   }
 
   getUrl() {

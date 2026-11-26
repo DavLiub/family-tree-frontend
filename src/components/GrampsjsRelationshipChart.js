@@ -25,7 +25,13 @@ class GrampsjsRelationshipChart extends GrampsjsChartBase {
   }
 
   render() {
-    return html`<div id="container"></div>`
+    return html`<div
+      @person:photo-edit=${this._openPersonPhoto}
+      @person:basic-edit=${this._openPersonBasics}
+    >
+      <div id="container"></div>
+      ${this.renderPhotoDialog()}${this.renderBasicDialog()}
+    </div>`
   }
 
   firstUpdated() {
@@ -60,6 +66,9 @@ class GrampsjsRelationshipChart extends GrampsjsChartBase {
       nameDisplayFormat: this.nameDisplayFormat,
       ...getSymbols(this.appState.settings, s => this._(s)),
       canEdit: this.canEdit,
+      canEditPhoto: this.appState.permissions?.canEdit,
+      photoLabel: this._('Add or change photo'),
+      editLabel: this._('Basic details'),
       duration: chartTransitionDuration(),
       bboxWidth: this.containerWidth,
       bboxHeight: this.containerHeight,

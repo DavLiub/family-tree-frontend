@@ -8,6 +8,7 @@ import {
   mdiArrowDown,
   mdiArrowUp,
   mdiDelete,
+  mdiLinkOff,
   mdiLinkPlus,
   mdiPencil,
   mdiPlus,
@@ -18,6 +19,11 @@ import '@material/web/list/list-item.js'
 
 import {personListItemStyles, sharedStyles} from '../SharedStyles.js'
 import {GrampsjsAppStateMixin} from '../mixins/GrampsjsAppStateMixin.js'
+import {renderRecordDelete} from './GrampsjsRecordDelete.js'
+import {
+  confirmSectionRemoval,
+  renderSectionCreateActions,
+} from './sectionActions.js'
 
 export class GrampsjsEditableList extends GrampsjsAppStateMixin(LitElement) {
   static get styles() {
@@ -73,6 +79,19 @@ export class GrampsjsEditableList extends GrampsjsAppStateMixin(LitElement) {
           );
         }
 
+        .record-actions {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          justify-content: flex-end;
+          max-inline-size: min(12rem, 40vw);
+          gap: 0;
+        }
+
+        .record-actions > * {
+          max-inline-size: 100%;
+        }
+
         md-icon-button[disabled] {
           color: var(--grampsjs-body-font-color-25);
         }
@@ -92,6 +111,7 @@ export class GrampsjsEditableList extends GrampsjsAppStateMixin(LitElement) {
       hasEdit: {type: Boolean},
       hasReorder: {type: Boolean},
       _selectedIndex: {type: Number},
+      addLabel: {type: String},
     }
   }
 
@@ -107,10 +127,12 @@ export class GrampsjsEditableList extends GrampsjsAppStateMixin(LitElement) {
     this.hasEdit = false
     this.hasReorder = false
     this._selectedIndex = -1
+    this.addLabel = 'Add'
   }
 
   render() {
     return html`
+      ${this._renderCreateActions()}
       ${Object.keys(this.data).length === 0 && !this.edit
         ? ''
         : html`
@@ -123,6 +145,127 @@ export class GrampsjsEditableList extends GrampsjsAppStateMixin(LitElement) {
           `}
       ${this.dialogContent}
     `
+  }
+
+  _renderCreateActions() {
+    return renderSectionCreateActions(this, {
+      add: this.hasAdd && typeof this._handleAdd === 'function',
+      attach: this.hasShare && typeof this._handleShare === 'function',
+      addLabel: this.addLabel,
+      newObject: ['Event', 'Citation', 'ChildRef'].includes(this.objType),
+      onAdd: () => this._handleAdd(),
+      onAttach: () => this._handleShare(),
+    })
+  }
+
+  _renderRowEdit(index, label = 'Edit') {
+    if (!this.appState.permissions?.canEdit) return ''
+    return html`<div slot="end" class="record-actions">
+      <md-icon-button
+        aria-label="${this._(label)}"
+        title="${this._(label)}"
+        @click="${e => {
+          e.stopPropagation()
+          this._selectedIndex = index
+          this._handleEdit()
+        }}"
+      >
+        <grampsjs-icon
+          path="${mdiPencil}"
+          color="var(--mdc-theme-secondary)"
+        ></grampsjs-icon> </md-icon-button
+      >${this._renderRowRemove(index)}${this._renderRowDelete(
+        index
+      )}${this._renderRowReorder(index)}${this._renderExtraRowActions(index)}
+    </div>`
+  }
+
+  _renderExtraRowActions() {
+    return ''
+  }
+
+  _renderRowReorder(index) {
+    if (
+      !this.hasReorder ||
+      !this.appState.permissions?.canEdit ||
+      this.data.length < 2
+    )
+      return ''
+    return [
+      [index === 0, 'Move Up', mdiArrowUp, () => this._handleUp()],
+      [
+        index === this.data.length - 1,
+        'Move Down',
+        mdiArrowDown,
+        () => this._handleDown(),
+      ],
+    ].map(
+      ([disabled, label, icon, action]) => html`<md-icon-button
+        slot="end"
+        ?disabled=${disabled}
+        aria-label=${this._(label)}
+        title=${this._(label)}
+        @click=${e => {
+          e.stopPropagation()
+          this._selectedIndex = index
+          action()
+        }}
+        ><grampsjs-icon
+          path=${icon}
+          color="var(--mdc-theme-secondary)"
+        ></grampsjs-icon
+      ></md-icon-button>`
+    )
+  }
+
+  _sharedEndpoint() {
+    return {Citation: 'citations'}[this.objType]
+  }
+
+  _renderRowDelete(index) {
+    const endpoint = this._sharedEndpoint()
+    return endpoint ? renderRecordDelete(this, endpoint, this.data[index]) : ''
+  }
+
+  _renderRowRemove(
+    index,
+    label = this._sharedEndpoint() ? 'Detach from person' : 'Delete entry'
+  ) {
+    if (
+      !this.appState.permissions?.canEdit ||
+      typeof this._handleDelete !== 'function'
+    )
+      return ''
+    return html`<md-icon-button
+      slot="end"
+      aria-label=${this._(label)}
+      title=${this._(label)}
+      @click=${e => {
+        e.stopPropagation()
+        this._requestRowRemove(index)
+      }}
+      ><grampsjs-icon
+        path=${this._sharedEndpoint() ? mdiLinkOff : mdiDelete}
+        color="var(--mdc-theme-secondary)"
+      ></grampsjs-icon
+    ></md-icon-button>`
+  }
+
+  _canRemoveIndex(index) {
+    return index >= 0 && index < this.data.length
+  }
+
+  _requestRowRemove(index) {
+    if (!this._canRemoveIndex(index)) return
+    confirmSectionRemoval(
+      this,
+      () => {
+        this._selectedIndex = index
+        this._handleDelete(new Event('confirm'))
+      },
+      this._sharedEndpoint() ? 'Detach from person' : 'Delete entry',
+      Boolean(this._sharedEndpoint())
+    )
   }
 
   _handleSelected(i) {
@@ -139,32 +282,14 @@ export class GrampsjsEditableList extends GrampsjsAppStateMixin(LitElement) {
   }
 
   _renderActionBtns() {
+    if (!this.appState.permissions?.canEdit) return ''
     return html`
-      ${this.hasShare
-        ? html`
-            <md-icon-button class="edit" @click="${this._handleShare}">
-              <grampsjs-icon
-                path="${mdiLinkPlus}"
-                color="var(--mdc-theme-secondary)"
-              ></grampsjs-icon>
-            </md-icon-button>
-          `
-        : ''}
-      ${this.hasAdd
-        ? html`
-            <md-icon-button class="edit" @click="${this._handleAdd}">
-              <grampsjs-icon
-                path="${mdiPlus}"
-                color="var(--mdc-theme-secondary)"
-              ></grampsjs-icon>
-            </md-icon-button>
-          `
-        : ''}
       ${this.hasEdit
         ? html`
             <md-icon-button
               ?disabled="${this._selectedIndex === -1}"
               class="edit"
+              aria-label=${this._('Edit selected item')}
               @click="${this._handleEdit}"
             >
               <grampsjs-icon
@@ -180,6 +305,7 @@ export class GrampsjsEditableList extends GrampsjsAppStateMixin(LitElement) {
               ?disabled="${this._selectedIndex === -1 ||
               this._selectedIndex === 0}"
               class="edit"
+              aria-label=${this._('Move Up')}
               @click="${this._handleUp}"
             >
               <grampsjs-icon
@@ -191,6 +317,7 @@ export class GrampsjsEditableList extends GrampsjsAppStateMixin(LitElement) {
               ?disabled="${this._selectedIndex === -1 ||
               this._selectedIndex === this.data.length - 1}"
               class="edit"
+              aria-label=${this._('Move Down')}
               @click="${this._handleDown}"
             >
               <grampsjs-icon
@@ -201,9 +328,10 @@ export class GrampsjsEditableList extends GrampsjsAppStateMixin(LitElement) {
           `
         : ''}
       <md-icon-button
-        ?disabled="${this._selectedIndex === -1}"
+        ?disabled="${!this._canRemoveIndex(this._selectedIndex)}"
         class="edit"
-        @click="${this._handleDelete}"
+        aria-label=${this._('Remove selected item')}
+        @click="${() => this._requestRowRemove(this._selectedIndex)}"
       >
         <grampsjs-icon
           path="${mdiDelete}"
@@ -214,7 +342,7 @@ export class GrampsjsEditableList extends GrampsjsAppStateMixin(LitElement) {
   }
 
   updated(changed) {
-    if (changed.has('edit')) {
+    if (changed.has('edit') && changed.get('edit') !== undefined) {
       this._selectedIndex = -1
       this.dialogContent = ''
     }

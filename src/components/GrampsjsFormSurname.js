@@ -11,7 +11,7 @@ import {fireEvent} from '../util.js'
 import './GrampsjsFormString.js'
 import {GrampsjsAppStateMixin} from '../mixins/GrampsjsAppStateMixin.js'
 
-class GrampsjsFormSurname extends GrampsjsAppStateMixin(LitElement) {
+export class GrampsjsFormSurname extends GrampsjsAppStateMixin(LitElement) {
   static get styles() {
     return [
       sharedStyles,
@@ -62,6 +62,7 @@ class GrampsjsFormSurname extends GrampsjsAppStateMixin(LitElement) {
           id="prefix"
           value="${this.data.prefix || ''}"
           label="${this._('Prefix')}"
+          .appState=${this.appState}
         ></grampsjs-form-string>
       </p>
       <p>
@@ -72,6 +73,7 @@ class GrampsjsFormSurname extends GrampsjsAppStateMixin(LitElement) {
           id="surname"
           value="${this.data.surname || ''}"
           label="${this._('Surname')}"
+          .appState=${this.appState}
         ></grampsjs-form-string>
       </p>
       <p class="${classMap({hide: !this.showMore})}">
@@ -82,6 +84,7 @@ class GrampsjsFormSurname extends GrampsjsAppStateMixin(LitElement) {
           id="connector"
           value="${this.data.connector || ''}"
           label="${this._('Connector')}"
+          .appState=${this.appState}
         ></grampsjs-form-string>
       </p>
       ${this.origintype

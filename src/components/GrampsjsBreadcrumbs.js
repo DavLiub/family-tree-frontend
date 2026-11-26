@@ -13,6 +13,7 @@ import './GrampsjsIcon.js'
 import './GrampsjsTooltip.js'
 import './GrampsjsShareUrl.js'
 import './GrampsjsBookmarkButton.js'
+import './GrampsjsFormPrivacy.js'
 
 export class GrampsjsBreadcrumbs extends GrampsjsAppStateMixin(LitElement) {
   static get styles() {
@@ -92,6 +93,7 @@ export class GrampsjsBreadcrumbs extends GrampsjsAppStateMixin(LitElement) {
       objectIcon: {type: String},
       hideBookmark: {type: Boolean},
       hideLock: {type: Boolean},
+      dialogContent: {state: true},
     }
   }
 
@@ -104,6 +106,7 @@ export class GrampsjsBreadcrumbs extends GrampsjsAppStateMixin(LitElement) {
     this.objectIcon = ''
     this.hideBookmark = false
     this.hideLock = false
+    this.dialogContent = ''
   }
 
   render() {
@@ -121,7 +124,8 @@ export class GrampsjsBreadcrumbs extends GrampsjsAppStateMixin(LitElement) {
             : html`
                 <span id="wrap-btn-private">
                   <md-icon-button
-                    ?disabled="${!this.edit}"
+                    ?disabled="${!this.appState.permissions?.canEdit}"
+                    aria-label=${this._('Edit privacy')}
                     @click="${this._handlePrivacyClick}"
                     @keydown="${clickKeyHandler}"
                     touch-target="none"
@@ -159,6 +163,7 @@ export class GrampsjsBreadcrumbs extends GrampsjsAppStateMixin(LitElement) {
           ></grampsjs-share-url>
         </span>
       </div>
+      ${this.dialogContent}
     `
   }
 
@@ -172,10 +177,27 @@ export class GrampsjsBreadcrumbs extends GrampsjsAppStateMixin(LitElement) {
   }
 
   _handlePrivacyClick() {
-    fireEvent(this, 'edit:action', {
-      action: 'updateProp',
-      data: {private: !this.data.private},
-    })
+    if (!this.appState.permissions?.canEdit) return
+    this.dialogContent = html`<grampsjs-form-privacy
+      awaitSave
+      dialogTitle=${this._('Edit privacy')}
+      .appState=${this.appState}
+      .data=${{private: Boolean(this.data.private)}}
+      @object:save=${e => {
+        e.stopPropagation()
+        fireEvent(this, 'edit:action', {
+          action: 'updateProp',
+          data: e.detail.data,
+          complete: e.detail.complete,
+        })
+      }}
+      @object:saved=${() => {
+        this.dialogContent = ''
+      }}
+      @object:cancel=${() => {
+        this.dialogContent = ''
+      }}
+    ></grampsjs-form-privacy>`
   }
 }
 

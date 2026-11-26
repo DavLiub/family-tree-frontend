@@ -62,6 +62,7 @@ export class GrampsjsAttributes extends GrampsjsEditableList {
           path="${mdiInformation}"
           color="var(--grampsjs-color-icon)"
         ></grampsjs-icon>
+        ${this._renderRowEdit(i, 'Edit attribute')}
       </md-list-item>
     `
   }
@@ -69,6 +70,8 @@ export class GrampsjsAttributes extends GrampsjsEditableList {
   _handleAdd() {
     this.dialogContent = html`
       <grampsjs-form-edit-attribute
+        awaitSave
+        @object:saved="${this._handleAttrCancel}"
         new
         attributeCategory="${this.attributeCategory}"
         @object:save="${this._handleAttrSave}"
@@ -87,6 +90,8 @@ export class GrampsjsAttributes extends GrampsjsEditableList {
     }
     this.dialogContent = html`
       <grampsjs-form-edit-attribute
+        awaitSave
+        @object:saved="${this._handleAttrCancel}"
         attributeCategory="${this.attributeCategory}"
         @object:save="${this._handleAttrSaveEdit}"
         @object:cancel="${this._handleAttrCancel}"
@@ -107,22 +112,22 @@ export class GrampsjsAttributes extends GrampsjsEditableList {
   _handleAttrSave(e) {
     fireEvent(this, 'edit:action', {
       action: 'addAttribute',
+      complete: e.detail.complete,
       data: e.detail.data,
     })
     e.preventDefault()
     e.stopPropagation()
-    this.dialogContent = ''
   }
 
   _handleAttrSaveEdit(e) {
     fireEvent(this, 'edit:action', {
       action: 'updateAttribute',
+      complete: e.detail.complete,
       data: e.detail.data,
       index: this._selectedIndex,
     })
     e.preventDefault()
     e.stopPropagation()
-    this.dialogContent = ''
   }
 
   _handleAttrCancel() {

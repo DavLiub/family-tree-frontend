@@ -23,6 +23,28 @@ export class GrampsjsFormNewNote extends GrampsjsNewObjectTagsMixin(
   constructor() {
     super()
     this.data = {_class: 'Note', text: {_class: 'StyledText', string: ''}}
+    this.addEventListener('object:saved', event => {
+      if (event.target === this && this.compact) this._discardEditorDraft()
+    })
+  }
+
+  _discardEditorDraft() {
+    this.renderRoot.querySelector('grampsjs-editor')?.discardDraft()
+  }
+
+  _handleDialogCancel() {
+    if (this.saving) return
+    if (this.compact) this._discardEditorDraft()
+    super._handleDialogCancel()
+  }
+
+  _handleDialogSave() {
+    this.data = {...this.data, type: this.data.type || this._noteDefaultType}
+    super._handleDialogSave()
+  }
+
+  get isValid() {
+    return Boolean(this.data.text?.string?.trim())
   }
 
   checkFormValidity() {

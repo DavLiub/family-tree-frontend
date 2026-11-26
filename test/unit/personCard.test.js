@@ -138,6 +138,37 @@ describe('appendPersonCard', () => {
     expect(surname.length).toBeLessThan('Featherstonehaugh-Montgomery,'.length)
   })
 
+  it('adds smaller birth-name text to a full native record without overlapping dates', () => {
+    const svg = create('svg')
+    const person = {
+      ...people.full,
+      primary_name: {
+        first_name: 'Anna',
+        type: 'Married Name',
+        surname_list: [{surname: 'Berg'}],
+      },
+      alternate_names: [
+        {
+          first_name: 'Anna',
+          type: 'Birth Name',
+          surname_list: [{surname: 'Stone'}],
+        },
+      ],
+    }
+    const nodes = svg.selectAll('g').data([person]).join('g')
+    appendPersonCard(nodes, {profile: d => d.profile, person: d => d})
+    const birth = nodes.node().querySelector('.birth-name')
+    expect(birth.textContent).toBe('(Stone)')
+    expect(birth.getAttribute('font-size')).toBe('11')
+    const ys = [...nodes.node().querySelectorAll('text')].map(t =>
+      Number(t.getAttribute('y'))
+    )
+    expect(new Set(ys).size).toBe(5)
+    expect(nodes.node().querySelector('title').textContent).toContain(
+      'Anna Berg (Stone)'
+    )
+  })
+
   it('colours the bar by sex', () => {
     const cards = renderCards()
     const barColor = node => node.querySelector('rect').getAttribute('fill')
@@ -158,8 +189,20 @@ describe('appendPersonCard', () => {
     const {full} = renderCards({palette})
     const [bar, box] = full.querySelectorAll('rect')
     expect(bar.getAttribute('fill')).toBe('pink')
-    expect(box.getAttribute('fill')).toBe('white')
+    expect(box.getAttribute('fill')).toBe('color-mix(in srgb, pink 22%, white)')
     expect(full.querySelector('text').getAttribute('fill')).toBe('black')
+  })
+
+  it('reserves the same photo space for images and sex-specific placeholders', () => {
+    const cards = renderCards()
+    const male = cards.noSurname.querySelector('.photo-placeholder path')
+    const female = cards.full.querySelector('.photo-placeholder path')
+    const neutral = cards.longName.querySelector('.photo-placeholder path')
+    expect(male.getAttribute('d')).not.toBe(female.getAttribute('d'))
+    expect(neutral.getAttribute('d')).not.toBe(male.getAttribute('d'))
+    expect(cards.full.querySelector('text').getAttribute('x')).toBe(
+      cards.noGiven.querySelector('text').getAttribute('x')
+    )
   })
 
   it('draws images with unique pattern ids', () => {
@@ -173,7 +216,9 @@ describe('appendPersonCard', () => {
       first.querySelector('pattern image').getAttributeNS(XLINK, 'href')
     ).toBe('https://example.org/doe.jpg')
     expect(patternId(first)).not.toBe(patternId(second))
-    expect(renderCards().full.querySelector('circle')).toBeNull()
+    expect(
+      renderCards().full.querySelector('.photo-placeholder')
+    ).not.toBeNull()
   })
 
   it('selects the person on click', () => {

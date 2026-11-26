@@ -1,4 +1,7 @@
+import {mdiAccount, mdiFaceMan, mdiFaceWoman} from '@mdi/js'
+import {updatePhotoButtons} from './photoButton.js'
 import {local, select} from 'd3-selection'
+import {getPersonNameDisplay} from '../components/nameHistory.js'
 import {chartNameDisplayFormat, fireEvent} from '../util.js'
 import {
   appendAddPersonButton,
@@ -39,6 +42,7 @@ export function appendPersonCard(
   nodes,
   {
     profile,
+    person = () => undefined,
     imageUrl = () => '',
     boxWidth = 190,
     boxHeight = 90,
@@ -51,9 +55,8 @@ export function appendPersonCard(
 ) {
   const left = -boxWidth / 2
   const top = -boxHeight / 2
-  const imgRadius = (boxHeight - imgPadding * 2) / 2
-  const textPadding = d =>
-    imageUrl(d) ? 2 * imgRadius + 2 * imgPadding : 2 * imgPadding
+  const imgRadius = Math.min(30, (boxHeight - imgPadding * 2) / 2)
+  const textPadding = () => 2 * imgRadius + 2 * imgPadding
 
   nodes
     .append('rect')
@@ -67,13 +70,26 @@ export function appendPersonCard(
 
   nodes
     .append('rect')
-    .attr('fill', palette.personBox)
+    .attr(
+      'fill',
+      d =>
+        `color-mix(in srgb, ${
+          palette.sex[profile(d)?.sex] ?? palette.sex.U
+        } 22%, ${palette.personBox})`
+    )
     .attr('x', left)
     .attr('y', top)
     .attr('width', boxWidth)
     .attr('height', boxHeight)
     .attr('rx', 8)
     .attr('ry', 8)
+
+  const birthName = d =>
+    getPersonNameDisplay(person(d) || {}, () => '').birth.replace(/^: /, '')
+  nodes.append('title').text(d => {
+    const main = getPersonNameDisplay(person(d) || {profile: profile(d)}).main
+    return birthName(d) ? `${main} (${birthName(d)})` : main
+  })
 
   const surnameFirst =
     nameDisplayFormat === chartNameDisplayFormat.surnameThenGiven
@@ -106,13 +122,51 @@ export function appendPersonCard(
       .filter(d => line.show(profile(d)))
       .append('text')
       .attr('x', d => left + textPadding(d))
-      .attr('y', top + 25 + 17 * i)
+      .attr(
+        'y',
+        d => top + (birthName(d) ? 16 + 15 * (i > 1 ? i + 1 : i) : 25 + 17 * i)
+      )
       .attr('text-anchor', 'start')
       .attr('font-weight', line.weight)
       .attr('fill', palette.text)
       .attr('paint-order', 'stroke')
-      .text(d => clipString(line.text(profile(d)), boxWidth - textPadding(d)))
+      .text(d =>
+        clipString(
+          line.text(profile(d)),
+          boxWidth - textPadding(d) - (i < 2 ? 44 : 10)
+        )
+      )
   })
+
+  nodes
+    .filter(d => birthName(d))
+    .append('text')
+    .attr('class', 'birth-name')
+    .attr('x', d => left + textPadding(d))
+    .attr('y', top + 46)
+    .attr('font-size', 11)
+    .attr('fill', palette.text)
+    .text(d => clipString(`(${birthName(d)})`, boxWidth - textPadding(d)))
+
+  const placeholders = nodes
+    .filter(d => !imageUrl(d))
+    .append('g')
+    .attr('class', 'photo-placeholder')
+    .attr('transform', `translate(${left + imgPadding}, ${-imgRadius})`)
+  placeholders
+    .append('circle')
+    .attr('cx', imgRadius)
+    .attr('cy', imgRadius)
+    .attr('r', imgRadius)
+    .attr('fill', palette.personBox)
+  placeholders
+    .append('path')
+    .attr(
+      'd',
+      d => ({M: mdiFaceMan, F: mdiFaceWoman}[profile(d)?.sex] || mdiAccount)
+    )
+    .attr('transform', `translate(8,8) scale(${(imgRadius * 2 - 16) / 24})`)
+    .attr('fill', palette.sex ? palette.text : 'currentColor')
 
   nodes
     .filter(d => imageUrl(d))
@@ -129,12 +183,13 @@ export function appendPersonCard(
         .append('image')
         .attr('width', 2 * imgRadius)
         .attr('height', 2 * imgRadius)
+        .attr('preserveAspectRatio', 'xMidYMid slice')
         .attr('xlink:href', imageUrl(d))
       node
         .append('circle')
         .attr('r', imgRadius)
         .attr('cx', left + imgPadding + imgRadius)
-        .attr('cy', top + imgPadding + imgRadius)
+        .attr('cy', 0)
         .attr('fill', `url(#${patternId})`)
     })
 }
@@ -240,6 +295,7 @@ export function drawChangedCards(
   cards.selectChildren().remove()
   appendPersonCard(cards, {
     profile: d => d.person?.profile,
+    person: d => d.person,
     imageUrl: getImageUrl,
     boxWidth,
     boxHeight,
@@ -254,12 +310,30 @@ export function drawChangedCards(
 // have a `person` and a `handle`, or removes them without `interactive`
 export function updatePersonCardInteraction(
   nodes,
-  {interactive, canEdit, palette = chartPalette, boxWidth, boxHeight}
+  {
+    interactive,
+    canEdit,
+    canEditPhoto = false,
+    photoLabel = 'Add photo',
+    editLabel = 'Basic details',
+    palette = chartPalette,
+    boxWidth,
+    boxHeight,
+  }
 ) {
   if (!interactive) {
     clearPersonCardInteraction(nodes)
     return
   }
+  updatePhotoButtons(nodes, {
+    canEditPhoto,
+    photoLabel,
+    editLabel,
+    handle: d => d.person?.handle,
+    boxWidth,
+    boxHeight,
+    palette,
+  })
   setPersonCardInteraction(nodes, {
     profile: d => d.person?.profile,
     handle: d => d.handle,
@@ -276,6 +350,8 @@ export function clearPersonCardInteraction(nodes) {
   nodes
     .style('cursor', null)
     .on('click mouseenter mouseleave', null)
-    .selectAll('.add-person-btn')
+    .selectAll(
+      '.add-person-btn, .person-photo-button, .person-photo-target, .person-edit-button'
+    )
     .remove()
 }

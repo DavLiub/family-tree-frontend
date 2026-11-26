@@ -6,12 +6,14 @@ import {fireEvent, makeHandle} from '../util.js'
 import {renderIcon} from '../objectRender.js'
 import './GrampsjsFormCitation.js'
 import './GrampsjsFormNewCitation.js'
+import './GrampsjsFormContextObject.js'
 
 export class GrampsjsSourceCitations extends GrampsjsEditableList {
   constructor() {
     super()
     this.objType = 'Citation'
     this.hasReorder = true
+    this.hasEdit = true
   }
 
   row(obj, i) {
@@ -29,6 +31,7 @@ export class GrampsjsSourceCitations extends GrampsjsEditableList {
       >
         ${obj?.profile?.source?.title || this._('Source')}
         <span slot="supporting-text"> ${obj.page || obj.gramps_id} </span>
+        ${this._renderRowEdit(i, 'Edit citation')}
         ${renderIcon({object: obj, object_type: 'citation'}, 'start')}
       </md-list-item>
     `
@@ -49,6 +52,20 @@ export class GrampsjsSourceCitations extends GrampsjsEditableList {
   // eslint-disable-next-line class-methods-use-this
   _getItemPath(grampsId) {
     return `citation/${grampsId}`
+  }
+
+  _handleEdit() {
+    const obj = this.data[this._selectedIndex]
+    if (!obj?.handle) return
+    this.dialogContent = html`<grampsjs-form-context-object
+      endpoint="citations"
+      handle="${obj.handle}"
+      dialogTitle="${this._('Edit citation')}"
+      .data="${structuredClone(obj)}"
+      .appState="${this.appState}"
+      @object:saved="${this._handleCitCancel}"
+      @object:cancel="${this._handleCitCancel}"
+    ></grampsjs-form-context-object>`
   }
 
   _handleAdd() {
