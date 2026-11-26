@@ -9,7 +9,7 @@ for (const slow of [false, true]) {
     const navigation = site.treeNavigation()
     await site.open('/tree', true, {homePerson: 'TEST-IHOME'})
     const view = page.locator('grampsjs-view-tree')
-    const cards = view.locator('.person-node')
+    const cards = view.locator('.person-card')
     await expect(cards).toHaveCount(1)
     await view.evaluate(element => {
       element.grampsId = 'TEST-I0001'
@@ -56,10 +56,10 @@ test('missing home person cannot clear the selected tree', async ({
   await view.evaluate(element => {
     element.grampsId = 'TEST-I0001'
   })
-  await expect(view.locator('.person-node')).toHaveCount(1)
+  await expect(view.locator('.person-card')).toHaveCount(1)
   await expect(view.locator('#button-home')).toBeDisabled()
   await view.evaluate(element => element._backToHomePerson())
   await view.getByRole('radio', {name: 'Descendant Tree', exact: true}).click()
-  await expect(view.locator('.person-node')).toHaveCount(1)
-  await expect(view.locator('.person-node')).toBeInViewport()
+  await expect(view.locator('.person-card')).toHaveCount(1)
+  await expect(view.locator('.person-card')).toBeInViewport()
 })

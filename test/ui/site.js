@@ -366,6 +366,7 @@ export const test = base.extend({
         const home = structuredClone(record)
         home.handle = 'synthetic-home'
         home.gramps_id = 'TEST-IHOME'
+        home.primary_name.first_name = 'Home Synthetic'
         home.profile.name_given = 'Home Synthetic'
         treeNavigation = {home, requests: [], hold: false, pending: []}
         return treeNavigation
