@@ -406,7 +406,7 @@ export class GrampsjsViewTree extends GrampsjsStaleDataMixin(GrampsjsView) {
   }
 
   renderContent() {
-    if (this.grampsId === '') {
+    if (!this.grampsId) {
       return this._renderNoHomePerson()
     }
     const {editable} = this.definition
@@ -511,7 +511,8 @@ export class GrampsjsViewTree extends GrampsjsStaleDataMixin(GrampsjsView) {
     return html`
       <md-icon-button
         @click=${this._backToHomePerson}
-        ?disabled=${this.grampsId === this.settings.homePerson}
+        ?disabled=${!this.settings.homePerson ||
+        this.grampsId === this.settings.homePerson}
         aria-label="${this._('Home Person')}"
         id="button-home"
         ><grampsjs-icon
@@ -852,7 +853,9 @@ export class GrampsjsViewTree extends GrampsjsStaleDataMixin(GrampsjsView) {
   }
 
   _backToHomePerson() {
-    this.grampsId = this.settings.homePerson
+    if (this.settings.homePerson) {
+      this.grampsId = this.settings.homePerson
+    }
   }
 
   // Opens the page of the person shown below the controls bar, who is the
