@@ -57,7 +57,9 @@ test('missing home person cannot clear the selected tree', async ({
     element.grampsId = 'TEST-I0001'
   })
   await expect(view.locator('.person-card')).toHaveCount(1)
-  await expect(view.locator('#button-home')).toBeDisabled()
+  const home = view.locator('#button-home')
+  await expect(home).toHaveJSProperty('disabled', true)
+  await expect(home.locator('button')).toBeDisabled()
   await view.evaluate(element => element._backToHomePerson())
   await view.getByRole('radio', {name: 'Descendant Tree', exact: true}).click()
   await expect(view.locator('.person-card')).toHaveCount(1)
