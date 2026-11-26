@@ -147,6 +147,23 @@ describe('GrampsjsViewTree', () => {
     expect(apiGet).toHaveBeenCalledTimes(2)
   })
 
+  it.each([undefined, null, ''])(
+    'keeps the selected person when home is %s',
+    homePerson => {
+      const {view} = makeView()
+      view.settings = {homePerson}
+      view._backToHomePerson()
+      expect(view.grampsId).toBe('I1')
+    }
+  )
+
+  it('returns to the configured home person', () => {
+    const {view} = makeView()
+    view.settings = {homePerson: 'IHOME'}
+    view._backToHomePerson()
+    expect(view.grampsId).toBe('IHOME')
+  })
+
   it('records each selected person in the history, also the first one', () => {
     const {view} = makeView()
     // The first person is selected before the view is first updated
