@@ -63,6 +63,7 @@ export const test = base.extend({
     let people
     let personOverview = false
     let treePhoto = false
+    let treeNavigation
     let signedIn = false
     const recordError = owner => error =>
       errors.push({
@@ -247,6 +248,23 @@ export const test = base.extend({
         if (url.pathname === '/api/trees/-/config') return reply({})
         if (url.pathname === '/api/tasks/') return reply([])
         if (url.pathname === '/api/people/') {
+          if (treeNavigation) {
+            const rules = url.searchParams.get('rules')
+            const home = (
+              rules ||
+              url.searchParams.get('gramps_id') ||
+              ''
+            ).includes('TEST-IHOME')
+            if (rules) {
+              treeNavigation.requests.push(rules)
+              if (home && treeNavigation.hold) {
+                await new Promise(resolve =>
+                  treeNavigation.pending.push(resolve)
+                )
+              }
+            }
+            return reply([home ? treeNavigation.home : record])
+          }
           if (people && !url.searchParams.has('gramps_id')) {
             expect(url.searchParams.get('profile')).toBe('self')
             expect(url.searchParams.get('keys')).toBe(
@@ -344,6 +362,14 @@ export const test = base.extend({
         }
         return people
       },
+      treeNavigation() {
+        const home = structuredClone(record)
+        home.handle = 'synthetic-home'
+        home.gramps_id = 'TEST-IHOME'
+        home.profile.name_given = 'Home Synthetic'
+        treeNavigation = {home, requests: [], hold: false, pending: []}
+        return treeNavigation
+      },
       treePhoto() {
         treePhoto = true
       },
@@ -398,6 +424,7 @@ export const test = base.extend({
     try {
       await use(site)
     } finally {
+      treeNavigation?.pending.forEach(resolve => resolve())
       nameSave?.release?.()
       login?.release?.()
       login?.releaseReset?.()
