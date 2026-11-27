@@ -4,8 +4,8 @@ import {getDescendantTree, getTree} from '../util.js'
 
 // Dimensions for laying out tree charts, in SVG units
 export const treeLayoutDefaults = {
-  boxWidth: 250,
-  boxHeight: 104,
+  boxWidth: 280,
+  boxHeight: 136,
   gapX: 30, // horizontal gap between generations
   gapY: 5, // vertical gap between people
   padding: 20, // horizontal padding beyond the outermost generations

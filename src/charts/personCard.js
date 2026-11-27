@@ -1,3 +1,4 @@
+import {personAge} from '../personAge.js'
 import {mdiAccount, mdiFaceMan, mdiFaceWoman} from '@mdi/js'
 import {updatePhotoButtons} from './photoButton.js'
 import {local, select} from 'd3-selection'
@@ -51,6 +52,8 @@ export function appendPersonCard(
     birthSymbol = SYMBOL_SETS[SYMBOL_SET_DEFAULT].birthSymbol,
     deathSymbol = SYMBOL_SETS[SYMBOL_SET_DEFAULT].deathSymbol,
     palette = chartPalette,
+    relationship = () => '',
+    ageText = () => '',
   }
 ) {
   const left = -boxWidth / 2
@@ -88,7 +91,13 @@ export function appendPersonCard(
     getPersonNameDisplay(person(d) || {}, () => '').birth.replace(/^: /, '')
   nodes.append('title').text(d => {
     const main = getPersonNameDisplay(person(d) || {profile: profile(d)}).main
-    return birthName(d) ? `${main} (${birthName(d)})` : main
+    return [
+      birthName(d) ? `${main} (${birthName(d)})` : main,
+      ageText(d),
+      relationship(d),
+    ]
+      .filter(Boolean)
+      .join(' · ')
   })
 
   const surnameFirst =
@@ -147,6 +156,21 @@ export function appendPersonCard(
     .attr('font-size', 11)
     .attr('fill', palette.text)
     .text(d => clipString(`(${birthName(d)})`, boxWidth - textPadding(d)))
+
+  for (const [className, text, y] of [
+    ['person-age', ageText, 110],
+    ['person-relationship', relationship, 126],
+  ]) {
+    nodes
+      .filter(d => text(d))
+      .append('text')
+      .attr('class', className)
+      .attr('x', left + textPadding())
+      .attr('y', top + y)
+      .attr('font-size', 11)
+      .attr('fill', palette.text)
+      .text(d => clipString(text(d), boxWidth - textPadding() - 10))
+  }
 
   const placeholders = nodes
     .filter(d => !imageUrl(d))
@@ -260,6 +284,10 @@ export function drawChangedCards(
   nodes,
   {
     getImageUrl = () => '',
+    relations = {},
+    lang = 'en',
+    ageLabel = 'Age',
+    deathAgeLabel = 'Age at death',
     nameDisplayFormat,
     birthSymbol,
     deathSymbol,
@@ -272,6 +300,11 @@ export function drawChangedCards(
   nodes.each(function (d) {
     const inputs = {
       person: d.person,
+      relationship: relations[d.person?.handle] || '',
+      age: personAge(d.person),
+      lang,
+      ageLabel,
+      deathAgeLabel,
       imageUrl: getImageUrl(d),
       nameDisplayFormat,
       birthSymbol,
@@ -296,6 +329,17 @@ export function drawChangedCards(
   appendPersonCard(cards, {
     profile: d => d.person?.profile,
     person: d => d.person,
+    relationship: d => relations[d.person?.handle] || '',
+    ageText: d => {
+      const age = personAge(d.person)
+      if (age === null) return ''
+      const label = d.person?.profile?.death?.date ? deathAgeLabel : ageLabel
+      return `${label}: ${new Intl.NumberFormat(lang, {
+        style: 'unit',
+        unit: 'year',
+        unitDisplay: 'long',
+      }).format(age)}`
+    },
     imageUrl: getImageUrl,
     boxWidth,
     boxHeight,

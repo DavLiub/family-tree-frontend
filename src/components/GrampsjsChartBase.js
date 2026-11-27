@@ -28,6 +28,7 @@ export class GrampsjsChartBase extends GrampsjsAppStateMixin(LitElement) {
   static get properties() {
     return {
       data: {type: Array},
+      relations: {type: Object},
       _photoHandle: {state: true},
       _basicHandle: {state: true},
       containerWidth: {type: Number},
@@ -38,6 +39,7 @@ export class GrampsjsChartBase extends GrampsjsAppStateMixin(LitElement) {
   constructor() {
     super()
     this.data = []
+    this.relations = {}
     this._photoHandle = ''
     this._basicHandle = ''
     this.containerWidth = -1

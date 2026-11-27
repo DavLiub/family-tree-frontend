@@ -64,6 +64,10 @@ class GrampsjsRelationshipChart extends GrampsjsChartBase {
     this._chart.update(this._layout, {
       getImageUrl: node => getImageUrl(node.person, 100),
       nameDisplayFormat: this.nameDisplayFormat,
+      relations: this.relations,
+      lang: this.appState.i18n?.lang || 'en',
+      ageLabel: this._('Age'),
+      deathAgeLabel: this._('Age at death'),
       ...getSymbols(this.appState.settings, s => this._(s)),
       canEdit: this.canEdit,
       canEditPhoto: this.appState.permissions?.canEdit,
