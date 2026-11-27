@@ -1,3 +1,4 @@
+import {personAge} from '../personAge.js'
 import {html, css} from 'lit'
 import '@material/web/button/outlined-button'
 import '@material/web/iconbutton/outlined-icon-button'
@@ -127,7 +128,8 @@ export class GrampsjsPerson extends GrampsjsObject {
             `
           : ''}
       </h2>
-      ${this._renderBirth()} ${this._renderDeath()} ${this._renderRelation()}
+      ${this._renderBirth()} ${this._renderDeath()} ${this._renderAge()}
+      ${this._renderRelation()}
       ${this.preview ? '' : this._renderProfileNavigation()}
       ${this.preview ? '' : this._renderButtons()}
     `
@@ -178,6 +180,13 @@ export class GrampsjsPerson extends GrampsjsObject {
             >${main.slice(index + call.length)}`
         : main || this._('Name not recorded')
     return html`${heading}${birth ? html` (${birth})` : ''}`
+  }
+
+  _renderAge() {
+    const age = personAge(this.data)
+    return age === null
+      ? ''
+      : html`<p class="person-age">${this._('Age')}: ${age}</p>`
   }
 
   _renderBirth() {
@@ -433,10 +442,6 @@ export class GrampsjsPerson extends GrampsjsObject {
     const timelineOrder = new Map(
       this.timelineData.map((te, i) => [te.handle, i])
     )
-    const timelineAge = new Map(
-      this.timelineData.map(te => [te.handle, te.age || ''])
-    )
-
     const entries = []
 
     // Personal events: always from main data (timeline may omit undated ones).
@@ -448,7 +453,7 @@ export class GrampsjsPerson extends GrampsjsObject {
       entries.push({
         sortKey,
         data: event,
-        profile: {...baseProfile, age: timelineAge.get(event.handle) || ''},
+        profile: baseProfile,
       })
     }
 
@@ -483,7 +488,6 @@ export class GrampsjsPerson extends GrampsjsObject {
           role: isRelated ? te.person?.relationship || '' : '',
           summary: te.label || te.type || '',
           context: isRelated ? personName : this._('Family'),
-          age: te.age || '',
         },
       })
     }

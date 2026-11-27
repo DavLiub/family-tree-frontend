@@ -1,3 +1,4 @@
+import {personAge} from '../personAge.js'
 import {arc as d3arc} from 'd3-shape'
 import {create} from 'd3-selection'
 import {hierarchy, partition} from 'd3-hierarchy'
@@ -46,23 +47,7 @@ const colorFunctions = {
   },
   age: {
     type: 'number',
-    fct: person => {
-      let dBirth = person?.extended?.events?.[person?.birth_ref_index]?.date
-      dBirth =
-        // only normal dates, no spans etc., quality not estimated
-        dBirth !== undefined && dBirth.modifier === 0 && dBirth.quality !== 1
-          ? dBirth.sortval || undefined
-          : undefined
-      let dDeath = person?.extended?.events?.[person?.death_ref_index]?.date
-      dDeath =
-        dDeath !== undefined && dDeath.modifier === 0 && dDeath.quality !== 1
-          ? dDeath.sortval || undefined
-          : undefined
-      if (dBirth === undefined || dDeath === undefined) {
-        return undefined
-      }
-      return (dDeath - dBirth) / 365.25
-    },
+    fct: person => personAge(person) ?? undefined,
   },
   surname: {
     type: 'category',

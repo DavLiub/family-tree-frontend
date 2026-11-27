@@ -1,4 +1,5 @@
 import {describe, expect, it, vi} from 'vitest'
+import {render} from 'lit'
 import {GrampsjsFormContextEvent} from '../../src/components/GrampsjsFormContextEvent.js'
 import {GrampsjsFormContextNote} from '../../src/components/GrampsjsFormContextNote.js'
 import {GrampsjsEvents} from '../../src/components/GrampsjsEvents.js'
@@ -14,6 +15,18 @@ function state(record, apiPut) {
 }
 
 describe('context event and note updates', () => {
+  it('shows event dates without confusing them with a person age', () => {
+    const events = new GrampsjsEvents()
+    events.appState = {permissions: {}, i18n: {strings: {}}}
+    events.data = [{handle: 'synthetic-wedding', type: 'Marriage'}]
+    events.profile = [{type: 'Marriage', date: '2020-01-01', age: '34 years'}]
+    const root = document.createElement('div')
+    render(events.row(events.data[0], 0), root)
+    expect(root.textContent).toContain('2020-01-01')
+    expect(root.textContent).not.toContain('34 years')
+    expect(root.querySelector('[slot="trailing-supporting-text"]')).toBeNull()
+  })
+
   it('never routes an embedded note save to the enclosing person', () => {
     const editor = document.createElement('grampsjs-editor')
     editor.localSave = true

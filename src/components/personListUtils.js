@@ -1,4 +1,5 @@
 import {html} from 'lit'
+import {personAge} from '../personAge.js'
 import {mdiAccount} from '@mdi/js'
 
 import {objectIconPath, sexColor} from '../util.js'
@@ -43,10 +44,8 @@ export function renderPersonDates(
 ) {
   const birthStr = profile?.birth?.date || ''
   const deathStr = profile?.death?.date || ''
-  const ageStr =
-    showAge && profile?.death?.date && profile?.death?.age
-      ? `(${profile.death.age})`
-      : ''
+  const age = showAge ? personAge({profile}) : null
+  const ageStr = age === null ? '' : `(${age})`
   if (!birthStr && !deathStr && !ageStr) return ''
   return html`<span slot="supporting-text"
     ><span class="date-col"

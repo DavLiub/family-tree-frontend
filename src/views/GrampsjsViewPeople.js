@@ -3,6 +3,7 @@ People list view
 */
 
 import {html, css} from 'lit'
+import {personAge} from '../personAge.js'
 
 import {GrampsjsViewObjectsBase} from './GrampsjsViewObjectsBase.js'
 import {getPersonNameDisplay} from '../components/nameHistory.js'
@@ -14,15 +15,6 @@ import {
   tagFilter,
   yearsFilter,
 } from '../filterDefinitions.js'
-
-function _ageAtDeath(birthDate, deathDate) {
-  if (!birthDate || !deathDate) return null
-  const by = String(birthDate).match(/\b(\d{4})\b/)
-  const dy = String(deathDate).match(/\b(\d{4})\b/)
-  if (!by || !dy) return null
-  const age = parseInt(dy[1], 10) - parseInt(by[1], 10)
-  return age >= 0 ? age : null
-}
 
 export class GrampsjsViewPeople extends GrampsjsViewObjectsBase {
   static get styles() {
@@ -88,7 +80,7 @@ export class GrampsjsViewPeople extends GrampsjsViewObjectsBase {
         format: value => value || this._('Not recorded'),
       },
       {name: 'Death Place', key: 'deathPlace', defaultVisible: false},
-      {name: 'Age at death', key: 'age', defaultVisible: false},
+      {name: 'Age', key: 'age', defaultVisible: false},
       {
         name: 'Last changed',
         key: 'change',
@@ -138,7 +130,7 @@ export class GrampsjsViewPeople extends GrampsjsViewObjectsBase {
       birthPlace: row?.profile?.birth?.place_name,
       death: deathDate,
       deathPlace: row?.profile?.death?.place_name,
-      age: _ageAtDeath(birthDate, deathDate),
+      age: personAge(row),
       change: prettyTimeDiffTimestamp(row.change, this.appState.i18n.lang),
     }
   }

@@ -1,4 +1,5 @@
 import {describe, it, expect} from 'vitest'
+import {render} from 'lit'
 import {renderPersonDates} from '../../src/components/personListUtils.js'
 
 describe('renderPersonDates', () => {
@@ -7,6 +8,19 @@ describe('renderPersonDates', () => {
     const result = renderPersonDates(profile)
     expect(result.values).toContain('∗ 1990')
     expect(result.values[1]).toContain('† 2020')
+  })
+
+  it('recalculates completed years instead of trusting a server age label', () => {
+    const root = document.createElement('div')
+    render(
+      renderPersonDates({
+        birth: {date: '1990-11-27'},
+        death: {date: '2020-11-26', age: '999 years'},
+      }),
+      root
+    )
+    expect(root.textContent).toContain('(29)')
+    expect(root.textContent).not.toContain('999')
   })
 
   it('uses custom symbols when passed', () => {
