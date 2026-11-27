@@ -39,6 +39,7 @@ export class TreeBranches {
     const graph = new FamilyGraph([...records.values()])
     const visible = new Set(this.base.map(p => p.handle))
     const visitedSources = new Set()
+    const revealed = new Set()
     let changed = true
     while (changed) {
       changed = false
@@ -52,6 +53,7 @@ export class TreeBranches {
           if (visited.has(handle)) continue
           visited.add(handle)
           if (this.closed.has(handle)) continue
+          revealed.add(handle)
           for (const family of graph.partnerFamilies(handle)) {
             for (const partner of [family.father_handle, family.mother_handle])
               if (records.has(partner)) visible.add(partner)
@@ -74,7 +76,8 @@ export class TreeBranches {
         expanded:
           !this.closed.has(handle) &&
           (this.open.has(handle) ||
-            children.some(child => visible.has(child) && !base.has(child))),
+            (revealed.has(handle) &&
+              children.some(child => visible.has(child) && !base.has(child)))),
         busy: this.busy.has(handle),
       }
     }
