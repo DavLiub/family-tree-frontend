@@ -11,6 +11,7 @@ class GrampsjsRelationshipChart extends GrampsjsChartBase {
       grampsId: {type: String},
       nameDisplayFormat: {type: String},
       canEdit: {type: Boolean},
+      branchStates: {type: Object},
     }
   }
 
@@ -59,7 +60,13 @@ class GrampsjsRelationshipChart extends GrampsjsChartBase {
       this._chart.clear()
       return
     }
-    this._chart.update(this._layout, this.personCardOptions)
+    this._chart.update(this._layout, {
+      ...this.personCardOptions,
+      branchStates: this.branchStates,
+      expandLabel: this._('Expand descendants'),
+      collapseLabel: this._('Collapse descendants'),
+      loadingLabel: this._('Loading descendants'),
+    })
   }
 
   // Lays out the chart in the background. The current chart stays until the

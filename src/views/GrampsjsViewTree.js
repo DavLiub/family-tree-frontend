@@ -1,3 +1,4 @@
+import {TreeBranches} from '../treeBranches.js'
 import {loadTreeRelations} from '../treeRelations.js'
 import {css, html} from 'lit'
 import {ifDefined} from 'lit/directives/if-defined.js'
@@ -262,6 +263,7 @@ export class GrampsjsViewTree extends GrampsjsStaleDataMixin(GrampsjsView) {
       _editMode: {type: Boolean},
       _chartState: {type: Object},
       _relations: {state: true},
+      _branchStates: {state: true},
     }
   }
 
@@ -277,6 +279,10 @@ export class GrampsjsViewTree extends GrampsjsStaleDataMixin(GrampsjsView) {
     this._dataRequest = 0
     this._relations = {}
     this._relationCache = new Map()
+    this._branchStates = {}
+    this._branchStore = new TreeBranches(snapshot =>
+      this._applyBranches(snapshot)
+    )
     this._selectedPerson = undefined
     this._editMode = false
     this._chartState = {}
@@ -344,6 +350,7 @@ export class GrampsjsViewTree extends GrampsjsStaleDataMixin(GrampsjsView) {
       this._dataChart = this.chart
       this._data = []
       this._dataUrl = ''
+      this._branchStore.reset([])
       this._chartState = {}
     }
   }
@@ -394,6 +401,8 @@ export class GrampsjsViewTree extends GrampsjsStaleDataMixin(GrampsjsView) {
   }
 
   async _fetchData(url) {
+    this._branchStore.cancel()
+    this._branchStates = {}
     this._dataRequest += 1
     const request = this._dataRequest
     this.loading = true
@@ -404,11 +413,39 @@ export class GrampsjsViewTree extends GrampsjsStaleDataMixin(GrampsjsView) {
     this.loading = false
     if ('data' in data) {
       this.error = false
-      this._data = data.data
-      this._loadRelations(data.data, request)
+      if (this.chart === 'relationship') this._branchStore.reset(data.data)
+      else {
+        this._data = data.data
+        this._loadRelations(data.data, request)
+      }
     } else if ('error' in data) {
       this.error = true
       this._errorMessage = data.error
+    }
+  }
+
+  _applyBranches({people, states}) {
+    this._branchStates = states
+    if (
+      people.length !== this._data.length ||
+      people.some((p, i) => p !== this._data[i])
+    ) {
+      this._data = people
+      this._loadRelations(people, this._dataRequest)
+    }
+  }
+
+  async _toggleBranch(event) {
+    event.stopPropagation()
+    if (this.chart !== 'relationship' || this.loading) return
+    try {
+      await this._branchStore.toggle(
+        event.detail.handle,
+        url => this.appState.apiGet(url),
+        this.appState.i18n?.lang || 'en'
+      )
+    } catch (error) {
+      fireEvent(this, 'grampsjs:error', {message: error.message})
     }
   }
 
@@ -417,6 +454,7 @@ export class GrampsjsViewTree extends GrampsjsStaleDataMixin(GrampsjsView) {
     const root = people.find(p => p.gramps_id === this.grampsId)?.handle
     if (!root) return
     const grampsId = this.grampsId
+    const currentPeople = this._data
     const lang = this.appState.i18n?.lang || 'en'
     const relations = await loadTreeRelations(
       people,
@@ -427,6 +465,7 @@ export class GrampsjsViewTree extends GrampsjsStaleDataMixin(GrampsjsView) {
     )
     if (
       request === this._dataRequest &&
+      currentPeople === this._data &&
       grampsId === this.grampsId &&
       lang === (this.appState.i18n?.lang || 'en')
     )
@@ -511,6 +550,7 @@ export class GrampsjsViewTree extends GrampsjsStaleDataMixin(GrampsjsView) {
         canEdit: this._editMode,
         appState: this.appState,
         relations: this._relations,
+        branchStates: this._branchStates,
         state: this._chartState,
       })
     )
@@ -518,7 +558,10 @@ export class GrampsjsViewTree extends GrampsjsStaleDataMixin(GrampsjsView) {
       return chart
     }
     return html`
-      <div @add-new-person-relation="${this._handleAddPersonRelation}">
+      <div
+        @add-new-person-relation="${this._handleAddPersonRelation}"
+        @tree:branch-toggle=${this._toggleBranch}
+      >
         ${chart}
       </div>
     `
