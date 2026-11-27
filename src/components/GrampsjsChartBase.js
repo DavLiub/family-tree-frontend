@@ -1,4 +1,6 @@
 import {html, css, LitElement} from 'lit'
+import {getSymbols} from '../symbols.js'
+import {chartTransitionDuration, getImageUrl} from '../charts/util.js'
 
 import {sharedStyles} from '../SharedStyles.js'
 import {GrampsjsAppStateMixin} from '../mixins/GrampsjsAppStateMixin.js'
@@ -44,6 +46,25 @@ export class GrampsjsChartBase extends GrampsjsAppStateMixin(LitElement) {
     this._basicHandle = ''
     this.containerWidth = -1
     this.containerHeight = -1
+  }
+
+  get personCardOptions() {
+    return {
+      getImageUrl: node => getImageUrl(node.person, 100),
+      nameDisplayFormat: this.nameDisplayFormat,
+      relations: this.relations,
+      lang: this.appState.i18n?.lang || 'en',
+      ageLabel: this._('Age'),
+      deathAgeLabel: this._('Age at death'),
+      ...getSymbols(this.appState.settings, s => this._(s)),
+      canEdit: this.canEdit,
+      canEditPhoto: this.appState.permissions?.canEdit,
+      photoLabel: this._('Add or change photo'),
+      editLabel: this._('Basic details'),
+      duration: chartTransitionDuration(),
+      bboxWidth: this.containerWidth,
+      bboxHeight: this.containerHeight,
+    }
   }
 
   // The viewport of a chart drawn with `ChartViewport`
