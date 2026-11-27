@@ -333,7 +333,7 @@ export function drawChangedCards(
       const age = personAge(d.person)
       if (age === null) return ''
       const label = d.person?.profile?.death?.date ? deathAgeLabel : ageLabel
-      return `${label}: ${new Intl.NumberFormat(lang, {
+      return `${label}: ${new Intl.NumberFormat(lang.replace(/_/g, '-'), {
         style: 'unit',
         unit: 'year',
         unitDisplay: 'long',
