@@ -43,7 +43,10 @@ for (const input of ['pointer', 'keyboard']) {
     ).toHaveText('cousin')
     await expect(
       person('Synthetic Grandchild').locator('.person-relationship')
-    ).toHaveText('first cousin once removed')
+    ).toContainText('first cousin')
+    await expect(person('Synthetic Grandchild').locator('title')).toContainText(
+      'first cousin once removed'
+    )
     await expect(
       person('Synthetic Grandchild').locator('.branch-toggle')
     ).toHaveAttribute('aria-disabled', 'true')
