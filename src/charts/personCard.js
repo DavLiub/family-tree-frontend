@@ -16,11 +16,10 @@ import {SYMBOL_SETS, SYMBOL_SET_DEFAULT} from '../symbols.js'
 let imagePatternCount = 0
 
 // Shortens `s` to fit `length` pixels, estimating the character width
-function clipString(s, length) {
+function clipString(s, length, fontSize = 13) {
   if (!s) {
     return ''
   }
-  const fontSize = 13
   const nChar = length / (fontSize * 0.6)
   if (s.length <= nChar) {
     return s
@@ -169,7 +168,7 @@ export function appendPersonCard(
       .attr('y', top + y)
       .attr('font-size', 11)
       .attr('fill', palette.text)
-      .text(d => clipString(text(d), boxWidth - textPadding() - 10))
+      .text(d => clipString(text(d), boxWidth - textPadding() - 10, 11))
   }
 
   const placeholders = nodes

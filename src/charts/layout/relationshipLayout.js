@@ -6,7 +6,7 @@ import {Graphviz} from '@hpcc-js/wasm'
 
 // Size of the person cards the layout makes room for, in pixels
 export const relationshipLayoutDefaults = {
-  boxWidth: 280,
+  boxWidth: 250,
   boxHeight: 136,
 }
 

@@ -7,14 +7,16 @@ for (const kind of ['ancestor', 'descendant', 'hourglass', 'relationship']) {
   }) => {
     const details = site.treeDetails()
     await site.open('/tree', true, {
-      homePerson: 'TEST-I0001',
+      homePerson: kind === 'descendant' ? 'TEST-MOTHER' : 'TEST-I0001',
       treeDefaultView: kind,
     })
     const view = page.locator('grampsjs-view-tree')
-    await expect(view.locator('.person-relationship')).toHaveText('mother')
+    await expect(view.locator('.person-relationship')).toHaveText(
+      kind === 'descendant' ? 'son' : 'mother'
+    )
     const mother = view
       .locator('.person-card')
-      .filter({has: page.locator('.person-relationship')})
+      .filter({has: page.locator('title', {hasText: 'Synthetic Mother'})})
     await expect(mother.locator('.person-age')).toHaveText(
       'Age at death: 49 years'
     )
@@ -42,10 +44,23 @@ for (const kind of ['ancestor', 'descendant', 'hourglass', 'relationship']) {
       )
     })
     expect(fits).toBe(true)
-    await view.evaluate(element => {
-      element.grampsId = 'TEST-MOTHER'
-    })
-    await expect(view.locator('.person-relationship')).toHaveText('son')
+    await view.evaluate(
+      (element, id) => {
+        element.grampsId = id
+      },
+      kind === 'descendant' ? 'TEST-I0001' : 'TEST-MOTHER'
+    )
+    if (kind === 'ancestor' || kind === 'descendant') {
+      await view
+        .getByRole('radio', {
+          name: kind === 'ancestor' ? 'Descendant Tree' : 'Ancestor Tree',
+          exact: true,
+        })
+        .click()
+    }
+    await expect(view.locator('.person-relationship')).toHaveText(
+      kind === 'descendant' ? 'mother' : 'son'
+    )
     expect(details.requests).toContain(
       '/api/relations/synthetic-person/synthetic-mother'
     )
