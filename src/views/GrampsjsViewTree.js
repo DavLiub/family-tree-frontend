@@ -1,3 +1,4 @@
+import {loadTreeRelations} from '../treeRelations.js'
 import {css, html} from 'lit'
 import {ifDefined} from 'lit/directives/if-defined.js'
 import {keyed} from 'lit/directives/keyed.js'
@@ -260,6 +261,7 @@ export class GrampsjsViewTree extends GrampsjsStaleDataMixin(GrampsjsView) {
       _data: {type: Array},
       _editMode: {type: Boolean},
       _chartState: {type: Object},
+      _relations: {state: true},
     }
   }
 
@@ -273,6 +275,8 @@ export class GrampsjsViewTree extends GrampsjsStaleDataMixin(GrampsjsView) {
     this._dataChart = undefined
     this._dataUrl = ''
     this._dataRequest = 0
+    this._relations = {}
+    this._relationCache = new Map()
     this._selectedPerson = undefined
     this._editMode = false
     this._chartState = {}
@@ -363,6 +367,7 @@ export class GrampsjsViewTree extends GrampsjsStaleDataMixin(GrampsjsView) {
   }
 
   handleUpdateStaleData() {
+    this._relationCache.clear()
     if (this._dataUrl) {
       this._fetchData(this._dataUrl)
     }
@@ -383,6 +388,7 @@ export class GrampsjsViewTree extends GrampsjsStaleDataMixin(GrampsjsView) {
     )
     if (url !== this._dataUrl) {
       this._dataUrl = url
+      this._relations = {}
       this._fetchData(url)
     }
   }
@@ -399,10 +405,32 @@ export class GrampsjsViewTree extends GrampsjsStaleDataMixin(GrampsjsView) {
     if ('data' in data) {
       this.error = false
       this._data = data.data
+      this._loadRelations(data.data, request)
     } else if ('error' in data) {
       this.error = true
       this._errorMessage = data.error
     }
+  }
+
+  async _loadRelations(people, request) {
+    if (!this.definition.editable) return
+    const root = people.find(p => p.gramps_id === this.grampsId)?.handle
+    if (!root) return
+    const grampsId = this.grampsId
+    const lang = this.appState.i18n?.lang || 'en'
+    const relations = await loadTreeRelations(
+      people,
+      root,
+      url => this.appState.apiGet(url),
+      lang,
+      this._relationCache
+    )
+    if (
+      request === this._dataRequest &&
+      grampsId === this.grampsId &&
+      lang === (this.appState.i18n?.lang || 'en')
+    )
+      this._relations = relations
   }
 
   renderContent() {
@@ -482,6 +510,7 @@ export class GrampsjsViewTree extends GrampsjsStaleDataMixin(GrampsjsView) {
         data: this._data,
         canEdit: this._editMode,
         appState: this.appState,
+        relations: this._relations,
         state: this._chartState,
       })
     )

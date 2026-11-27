@@ -90,6 +90,41 @@ const click = node =>
   node.dispatchEvent(new MouseEvent('click', {bubbles: true}))
 
 describe('appendPersonCard', () => {
+  it.each(['en_GB', 'ru'])(
+    'formats tree card age in %s and refreshes relationship labels',
+    lang => {
+      const record = {
+        handle: 'synthetic',
+        profile: {
+          name_given: 'Ann',
+          birth: {date: '1950-12-01'},
+          death: {date: '2000-11-30'},
+        },
+      }
+      const svg = create('svg')
+      const nodes = svg
+        .selectAll('g')
+        .data([{person: record}])
+        .join('g')
+      nodes.append('g').attr('class', 'person-card')
+      const options = {
+        lang,
+        boxWidth: 250,
+        boxHeight: 136,
+        relations: {synthetic: 'mother'},
+      }
+      drawChangedCards(nodes, options)
+      expect(nodes.node().querySelector('.person-age').textContent).toContain(
+        lang === 'ru' ? '49 лет' : '49 years'
+      )
+      expect(
+        nodes.node().querySelector('.person-relationship').textContent
+      ).toBe('mother')
+      drawChangedCards(nodes, {...options, relations: {}})
+      expect(nodes.node().querySelector('.person-relationship')).toBeNull()
+    }
+  )
+
   it('shows the surname first with placeholders for missing names', () => {
     const cards = renderCards()
     expect(texts(cards.full)).toEqual(['Berg,', 'Anna', '∗ 1900', '† 1980'])

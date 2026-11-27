@@ -127,6 +127,10 @@ export class ChartCanvas {
     const {boxWidth, boxHeight} = this.boxSize
     drawChangedCards(people, {
       getImageUrl: settings.getImageUrl,
+      relations: settings.relations,
+      lang: settings.lang,
+      ageLabel: settings.ageLabel,
+      deathAgeLabel: settings.deathAgeLabel,
       nameDisplayFormat,
       birthSymbol: settings.birthSymbol,
       deathSymbol: settings.deathSymbol,

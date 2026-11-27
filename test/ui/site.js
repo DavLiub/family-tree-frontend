@@ -63,6 +63,7 @@ export const test = base.extend({
     let people
     let personOverview = false
     let treePhoto = false
+    let treeDetails
     let treeNavigation
     let signedIn = false
     const recordError = owner => error =>
@@ -247,7 +248,23 @@ export const test = base.extend({
           return reply(record)
         if (url.pathname === '/api/trees/-/config') return reply({})
         if (url.pathname === '/api/tasks/') return reply([])
+        if (treeDetails && url.pathname.startsWith('/api/relations/')) {
+          treeDetails.requests.push(url.pathname)
+          return reply({
+            relationship_string: url.pathname.includes('/synthetic-person/')
+              ? 'mother'
+              : 'son',
+          })
+        }
         if (url.pathname === '/api/people/') {
+          if (treeDetails) {
+            const id = url.searchParams.get('gramps_id')
+            return reply(
+              id
+                ? treeDetails.people.filter(p => p.gramps_id === id)
+                : treeDetails.people
+            )
+          }
           if (treeNavigation) {
             const rules = url.searchParams.get('rules')
             const home = (
@@ -361,6 +378,27 @@ export const test = base.extend({
           records: structuredClone(peopleRecords),
         }
         return people
+      },
+      treeDetails() {
+        const mother = structuredClone(record)
+        mother.handle = 'synthetic-mother'
+        mother.gramps_id = 'TEST-MOTHER'
+        mother.profile.sex = 'F'
+        mother.profile.name_given = 'Synthetic Mother'
+        mother.profile.birth = {date: '1950-12-01'}
+        mother.profile.death = {date: '2000-11-30'}
+        mother.primary_name.first_name = 'Synthetic Mother'
+        record.profile.birth = {date: '1990-01-01'}
+        const family = {
+          handle: 'synthetic-family',
+          mother_handle: mother.handle,
+          father_handle: '',
+          child_ref_list: [{ref: record.handle, frel: 'Birth', mrel: 'Birth'}],
+        }
+        record.extended.primary_parent_family = family
+        mother.extended.families = [family]
+        treeDetails = {people: [record, mother], requests: []}
+        return treeDetails
       },
       treeNavigation() {
         const home = structuredClone(record)
