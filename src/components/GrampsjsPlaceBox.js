@@ -133,7 +133,6 @@ export class GrampsjsPlaceBox extends GrampsjsConnectedComponent {
             <grampsjs-events
               useSummary
               sorted
-              hideAge
               .appState="${this.appState}"
               .data="${place.extended.backlinks.event}"
               .profile="${place.profile?.references?.event || []}"
