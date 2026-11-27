@@ -133,7 +133,6 @@ export class GrampsjsPersonBox extends GrampsjsConnectedComponent {
               .profile="${person.profile?.events || []}"
               .eventRef="${person.event_ref_list || []}"
               sorted
-              hideAge
               @grampsjs-events:place-hover="${this._handlePlaceHover}"
             ></grampsjs-events>
           `

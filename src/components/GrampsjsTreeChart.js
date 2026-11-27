@@ -10,11 +10,7 @@ import {
   layoutHourglass,
 } from '../charts/layout/treeLayout.js'
 import {GrampsjsChartBase} from './GrampsjsChartBase.js'
-import {
-  chartTransitionDuration,
-  formatChartName,
-  getImageUrl,
-} from '../charts/util.js'
+import {formatChartName} from '../charts/util.js'
 import {fireEvent, menuSelectionHandler} from '../util.js'
 import {getSymbols} from '../symbols.js'
 import {personListItemStyles} from '../SharedStyles.js'
@@ -136,19 +132,10 @@ class GrampsjsTreeChart extends GrampsjsChartBase {
       return
     }
     this._chart.update(this._layout, {
+      ...this.personCardOptions,
       childrenTriangle: this._relatives().length > 0,
       triangleLabel: this.descendants ? this._('Parents') : this._('Children'),
-      getImageUrl: d => getImageUrl(d.person, 100),
       orientation: this.descendants ? 'RTL' : 'LTR',
-      bboxWidth: this.containerWidth,
-      bboxHeight: this.containerHeight,
-      nameDisplayFormat: this.nameDisplayFormat,
-      ...getSymbols(this.appState.settings, s => this._(s)),
-      canEdit: this.canEdit,
-      canEditPhoto: this.appState.permissions?.canEdit,
-      photoLabel: this._('Add or change photo'),
-      editLabel: this._('Basic details'),
-      duration: chartTransitionDuration(),
     })
   }
 

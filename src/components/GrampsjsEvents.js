@@ -55,7 +55,6 @@ export class GrampsjsEvents extends GrampsjsEditableList {
       dialogContent: {type: String},
       useSummary: {type: Boolean},
       sorted: {type: Boolean},
-      hideAge: {type: Boolean},
       defaultRole: {type: String},
     }
   }
@@ -69,7 +68,6 @@ export class GrampsjsEvents extends GrampsjsEditableList {
     this.addLabel = 'Add event'
     this.useSummary = false
     this.sorted = false
-    this.hideAge = false
     this.hasAdd = false
     this.hasShare = false
     this.hasReorder = true
@@ -161,13 +159,6 @@ export class GrampsjsEvents extends GrampsjsEditableList {
           'start',
           eventTypeIconPath[typeKey] || null
         )}
-        ${!this.hideAge &&
-        objProfile.profile?.age &&
-        /\d/.test(objProfile.profile.age)
-          ? html`<span slot="trailing-supporting-text"
-              >${objProfile.profile.age}</span
-            >`
-          : ''}
         <div slot="end" class="record-actions">
           ${this.appState.permissions?.canEdit
             ? html`

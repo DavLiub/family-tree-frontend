@@ -163,13 +163,14 @@ export const chartDefinitions = {
       rules: treeRules(grampsId, ancestors + 1, 2),
       extend: treeExtend,
     }),
-    render: ({grampsId, values, data, canEdit, appState}) => html`
+    render: ({grampsId, values, data, canEdit, appState, relations}) => html`
       <grampsjs-tree-chart
         ancestors
         grampsId=${grampsId}
         nAnc=${values.ancestors + 1}
         nDesc="2"
         nameDisplayFormat=${values.nameDisplayFormat}
+        .relations=${relations || {}}
         ?canEdit="${canEdit}"
         .data=${data}
         .appState="${appState}"
@@ -189,13 +190,14 @@ export const chartDefinitions = {
       rules: treeRules(grampsId, 2, descendants + 1),
       extend: treeExtend,
     }),
-    render: ({grampsId, values, data, canEdit, appState}) => html`
+    render: ({grampsId, values, data, canEdit, appState, relations}) => html`
       <grampsjs-tree-chart
         descendants
         grampsId=${grampsId}
         nAnc="2"
         nDesc=${values.descendants + 1}
         nameDisplayFormat=${values.nameDisplayFormat}
+        .relations=${relations || {}}
         ?canEdit="${canEdit}"
         .data=${data}
         gapX="60"
@@ -217,7 +219,7 @@ export const chartDefinitions = {
       rules: treeRules(grampsId, ancestors + 1, descendants + 1),
       extend: treeExtend,
     }),
-    render: ({grampsId, values, data, canEdit, appState}) => html`
+    render: ({grampsId, values, data, canEdit, appState, relations}) => html`
       <grampsjs-tree-chart
         ancestors
         descendants
@@ -225,6 +227,7 @@ export const chartDefinitions = {
         nAnc=${values.ancestors + 1}
         nDesc=${values.descendants + 1}
         nameDisplayFormat=${values.nameDisplayFormat}
+        .relations=${relations || {}}
         ?canEdit="${canEdit}"
         .data=${data}
         gapX="60"
@@ -256,10 +259,11 @@ export const chartDefinitions = {
       // The chart also shows other parent families, such as adoptive parents
       extend: `${treeExtend},parent_family_list`,
     }),
-    render: ({grampsId, values, data, canEdit, appState}) => html`
+    render: ({grampsId, values, data, canEdit, appState, relations}) => html`
       <grampsjs-relationship-chart
         grampsId=${grampsId}
         nameDisplayFormat=${values.nameDisplayFormat}
+        .relations=${relations || {}}
         ?canEdit="${canEdit}"
         .data=${data}
         .appState=${appState}

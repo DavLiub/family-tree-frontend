@@ -1,10 +1,17 @@
 import {describe, it, expect} from 'vitest'
 import {FamilyGraph} from '../../src/charts/model/FamilyGraph.js'
 import {
-  layoutAncestors,
-  layoutDescendants,
-  layoutHourglass,
+  layoutAncestors as ancestors,
+  layoutDescendants as descendants,
+  layoutHourglass as hourglass,
 } from '../../src/charts/layout/treeLayout.js'
+
+// Fix geometry for the algorithm examples; product card dimensions can change.
+const withGeometry = layout => (graph, root, options) =>
+  layout(graph, root, {boxWidth: 250, boxHeight: 104, ...options})
+const layoutAncestors = withGeometry(ancestors)
+const layoutDescendants = withGeometry(descendants)
+const layoutHourglass = withGeometry(hourglass)
 
 const childRef = ref => ({ref, frel: 'Birth', mrel: 'Birth'})
 

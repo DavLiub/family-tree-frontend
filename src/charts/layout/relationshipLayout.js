@@ -7,7 +7,7 @@ import {Graphviz} from '@hpcc-js/wasm'
 // Size of the person cards the layout makes room for, in pixels
 export const relationshipLayoutDefaults = {
   boxWidth: 250,
-  boxHeight: 104,
+  boxHeight: 136,
 }
 
 // Returns the relation of a child to the parents the child is linked from:
