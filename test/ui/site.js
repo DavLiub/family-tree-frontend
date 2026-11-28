@@ -63,6 +63,7 @@ export const test = base.extend({
     let people
     let personOverview = false
     let treePhoto = false
+    let treeBranches
     let treeDetails
     let treeNavigation
     let signedIn = false
@@ -248,6 +249,18 @@ export const test = base.extend({
           return reply(record)
         if (url.pathname === '/api/trees/-/config') return reply({})
         if (url.pathname === '/api/tasks/') return reply([])
+        if (treeBranches && url.pathname.startsWith('/api/relations/')) {
+          treeBranches.relations.push(url.pathname)
+          const handle = url.pathname.split('/').at(-1)
+          return reply({
+            relationship_string:
+              handle === 'synthetic-cousin'
+                ? 'cousin'
+                : handle === 'synthetic-grandchild'
+                ? 'first cousin once removed'
+                : 'relative',
+          })
+        }
         if (treeDetails && url.pathname.startsWith('/api/relations/')) {
           treeDetails.requests.push(url.pathname)
           return reply({
@@ -257,6 +270,23 @@ export const test = base.extend({
           })
         }
         if (url.pathname === '/api/people/') {
+          if (treeBranches) {
+            const rules = url.searchParams.get('rules') || ''
+            if (rules.includes('IsDescendantFamilyOf')) {
+              treeBranches.requests.push(rules)
+              if (treeBranches.hold)
+                await new Promise(resolve => {
+                  treeBranches.release = resolve
+                })
+              return reply(treeBranches.descendants)
+            }
+            const id = url.searchParams.get('gramps_id')
+            return reply(
+              id
+                ? treeBranches.base.filter(p => p.gramps_id === id)
+                : treeBranches.base
+            )
+          }
           if (treeDetails) {
             const id = url.searchParams.get('gramps_id')
             return reply(
@@ -379,6 +409,67 @@ export const test = base.extend({
         }
         return people
       },
+      treeBranches() {
+        const make = (handle, id, name) => {
+          const data = structuredClone(record)
+          data.handle = handle
+          data.gramps_id = id
+          data.primary_name.first_name = name
+          data.profile.name_given = name
+          data.extended.events = []
+          data.extended.families = []
+          return data
+        }
+        const aunt = make('synthetic-aunt', 'TEST-AUNT', 'Synthetic Aunt')
+        const cousin = make(
+          'synthetic-cousin',
+          'TEST-COUSIN',
+          'Synthetic Cousin'
+        )
+        const partner = make(
+          'synthetic-partner',
+          'TEST-PARTNER',
+          'Synthetic Partner'
+        )
+        const child = make(
+          'synthetic-grandchild',
+          'TEST-GRANDCHILD',
+          'Synthetic Grandchild'
+        )
+        const family = (handle, father, mother, children) => ({
+          handle,
+          father_handle: father,
+          mother_handle: mother,
+          child_ref_list: children.map(ref => ({
+            ref,
+            frel: 'Birth',
+            mrel: 'Birth',
+          })),
+        })
+        const f1 = family('synthetic-aunt-family', aunt.handle, '', [
+          cousin.handle,
+        ])
+        const f2 = family(
+          'synthetic-cousin-family',
+          cousin.handle,
+          partner.handle,
+          [child.handle]
+        )
+        aunt.extended.families = [f1]
+        cousin.extended.primary_parent_family = f1
+        cousin.extended.families = [f2]
+        partner.extended.families = [f2]
+        child.extended.primary_parent_family = f2
+        treeBranches = {
+          base: [record, aunt],
+          descendants: [aunt, cousin, partner, child],
+          requests: [],
+          relations: [],
+          hold: false,
+          release: null,
+        }
+        return treeBranches
+      },
       treeDetails() {
         const mother = structuredClone(record)
         mother.handle = 'synthetic-mother'
@@ -463,6 +554,7 @@ export const test = base.extend({
     try {
       await use(site)
     } finally {
+      treeBranches?.release?.()
       treeNavigation?.pending.forEach(resolve => resolve())
       nameSave?.release?.()
       login?.release?.()

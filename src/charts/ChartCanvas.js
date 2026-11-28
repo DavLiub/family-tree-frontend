@@ -1,3 +1,4 @@
+import {updateBranchButtons} from './branchButton.js'
 import {create} from 'd3-selection'
 import {
   currentPositions,
@@ -148,6 +149,7 @@ export class ChartCanvas {
       boxWidth,
       boxHeight,
     })
+    updateBranchButtons(people, {...settings, boxHeight})
     this.drawExtras(nodes, settings)
   }
 
