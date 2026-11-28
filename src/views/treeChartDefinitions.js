@@ -259,11 +259,20 @@ export const chartDefinitions = {
       // The chart also shows other parent families, such as adoptive parents
       extend: `${treeExtend},parent_family_list`,
     }),
-    render: ({grampsId, values, data, canEdit, appState, relations}) => html`
+    render: ({
+      grampsId,
+      values,
+      data,
+      canEdit,
+      appState,
+      relations,
+      branchStates,
+    }) => html`
       <grampsjs-relationship-chart
         grampsId=${grampsId}
         nameDisplayFormat=${values.nameDisplayFormat}
         .relations=${relations || {}}
+        .branchStates=${branchStates || {}}
         ?canEdit="${canEdit}"
         .data=${data}
         .appState=${appState}
